@@ -3,11 +3,13 @@ from conan.tools.cmake import CMake, CMakeToolchain
 
 class Cupcake(ConanFile):
     name = 'cupcake'
-    version = '0.1.0'
+    version = '0.2.0'
+    default_user = 'github'
+    default_channel = 'thejohnfreeman'
 
     license = 'ISC'
     author = 'John Freeman <jfreeman08@gmail.com>'
-    url = 'https://github.com/thejohnfreeman/project-template-cpp'
+    url = 'https://github.com/thejohnfreeman/cupcake'
 
     # TODO: The CMake helper requires the build_type setting to run its build
     # or install methods.
