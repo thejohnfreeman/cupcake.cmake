@@ -2,12 +2,13 @@
 
 cupcake is a CMake module.
 
+
 ## Install
 
 The recommended method to import cupcake is `find_package()`:
 
 ```cmake
-find_package(cupcake 0.1.0 REQUIRED)
+find_package(cupcake 0.2.0 REQUIRED)
 ```
 
 Unlike [`include()`][include], [`find_package()`][find_package] lets us easily
@@ -21,10 +22,10 @@ There are a few ways to accomplish that.
 First, you need to tell Conan how to find cupcake.
 You can either:
 
-- Point it to my public [Artifactory][]:
+- Point it to my public [Redirectory][]:
 
     ```shell
-    conan remote add jfreeman https://jfreeman.jfrog.io/artifactory/api/conan/default-conan
+    conan remote add redirectory https://conan.jfreeman.dev
     ```
 
 - Copy the recipe from this project:
@@ -33,14 +34,15 @@ You can either:
     conan export .
     ```
 
-Then add `cupcake/0.1.0` as a non-tool requirement to your conanfile:
+Then add `cupcake/0.2.0` as a non-tool requirement to your conanfile:
 
 ```
-requires = ['cupcake/0.1.0']
+requires = ['cupcake/0.2.0']
 ```
 
 [Tool requirements][tool_requires] cannot [modify][6] the `CMAKE_PREFIX_PATH`
 as of 2023-02-02.
+
 
 ### Install manually
 
@@ -210,7 +212,7 @@ then the command calls [`add_subdirectory(tests)`][add_subdirectory].
 
 Individual tests should be added in the `CMakeLists.txt` of the `tests`
 subdirectory.
-Dependencies that only the tests should be imported there too.
+Dependencies that only the tests require should be imported there too.
 
 
 ### `cupcake_add_test_executable`
@@ -322,6 +324,7 @@ target_link_libraries(${this}
 [CTest module]: https://cmake.org/cmake/help/latest/module/CTest.html
 
 [Artifactory]: https://docs.conan.io/1/uploading_packages/using_artifactory.html
+[Redirectory]: https://github.com/thejohnfreeman/redirectory
 [cpp_info]: https://docs.conan.io/1/reference/conanfile/attributes.html#cpp-info
 [package_info]: https://docs.conan.io/1/reference/conanfile/methods.html#package-info
 [tool_requires]: https://docs.conan.io/1/devtools/build_requires.html
