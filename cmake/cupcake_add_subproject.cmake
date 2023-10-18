@@ -21,6 +21,11 @@ function(cupcake_add_subproject name)
     "${CUPCAKE_MODULE_DIR}/data/set_subproject_variables.cmake"
   )
   message(STATUS "Entering subproject '${name}' depended by '${PROJECT_NAME}'...")
+  # I would like to choose a different default for `EXCLUDE_FROM_ALL`,
+  # but with `EXCLUDE_FROM_ALL`, the subproject's install script
+  # will not be called by the superproject's install script,
+  # and I cannot figure out how to correctly call it myself.
+  # https://stackoverflow.com/a/55803592/618906
   add_subdirectory("${path}" ${ARG_UNPARSED_ARGUMENTS})
 
   if(ARG_PRIVATE)
