@@ -1,5 +1,6 @@
 include_guard(GLOBAL)
 
+include(cupcake_find_sources)
 include(cupcake_generate_version_header)
 include(cupcake_project_properties)
 include(GNUInstallDirs)
@@ -20,7 +21,8 @@ function(cupcake_add_library name)
   # Otherwise, let the builder choose its linkage with BUILD_SHARED_LIBS.
   if(
       EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}" OR
-      EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}.cpp"
+      EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}.cpp" OR
+      EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}.c"
   )
     unset(type)
     set(public PUBLIC)
@@ -59,10 +61,7 @@ function(cupcake_add_library name)
       PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}"
     )
 
-    file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-      "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}/*.cpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}.cpp"
-    )
+    cupcake_find_sources(sources lib${name})
     target_sources(${target} PRIVATE ${sources})
     set_target_properties(${target} PROPERTIES
       OUTPUT_NAME ${name}

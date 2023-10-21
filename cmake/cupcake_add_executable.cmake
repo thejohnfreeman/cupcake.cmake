@@ -1,5 +1,6 @@
 include_guard(GLOBAL)
 
+include(cupcake_find_sources)
 include(cupcake_project_properties)
 include(GNUInstallDirs)
 
@@ -32,10 +33,7 @@ function(cupcake_add_executable name)
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/${name}"
   )
 
-  file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/${name}/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/${name}.cpp"
-  )
+  cupcake_find_sources(sources ${name})
   target_sources(${target} PRIVATE ${sources})
 
   set_target_properties(${target} PROPERTIES
