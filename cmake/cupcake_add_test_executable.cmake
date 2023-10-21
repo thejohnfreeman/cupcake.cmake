@@ -3,7 +3,7 @@ include_guard(GLOBAL)
 add_custom_target(tests)
 
 function(cupcake_add_test_executable name)
-  set(target test_${name})
+  set(target ${PROJECT_NAME}.test.${name})
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} EXCLUDE_FROM_ALL ${ARGN})
 
@@ -28,14 +28,14 @@ function(cupcake_add_test_executable name)
   )
 
   add_test(
-    NAME ${target}_build
+    NAME ${target}.build
     COMMAND
       ${CMAKE_COMMAND}
       --build ${CMAKE_BINARY_DIR}
       --config $<CONFIG>
       --target ${target}
   )
-  set_tests_properties(${target}_build PROPERTIES
+  set_tests_properties(${target}.build PROPERTIES
     FIXTURES_SETUP ${target}_fixture
   )
 endfunction()

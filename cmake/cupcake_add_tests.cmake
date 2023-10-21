@@ -6,12 +6,9 @@ macro(cupcake_add_tests)
     include(CTest)
     # Give package builders a means to skip unexported targets.
     if(BUILD_TESTING)
-      set(test_dependencies ${PROJECT_NAME}_test_dependencies)
-      add_library(${test_dependencies} INTERFACE)
-      add_library(
-        ${PROJECT_NAME}::test_dependencies
-        ALIAS ${test_dependencies}
-      )
+      set(target ${PROJECT_NAME}.dependencies.test)
+      add_library(${target} INTERFACE)
+      add_library(${PROJECT_NAME}::dependencies::test ALIAS ${target})
       add_subdirectory(tests)
     endif()
   endif()

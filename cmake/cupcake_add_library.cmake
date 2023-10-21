@@ -13,7 +13,7 @@ function(cupcake_add_library name)
   # so that libraries and executables can share the same name.
   # They will be distinguished in the filesystem by their filename prefix
   # and suffix, and within CMake by this prefix.
-  set(target ${PROJECT_NAME}_lib${name})
+  set(target ${PROJECT_NAME}.lib${name})
   set(this ${target} PARENT_SCOPE)
 
   # If this is a header-only library, then it must have type INTERFACE.
