@@ -8,7 +8,7 @@ cupcake is a CMake module.
 The recommended method to import cupcake is `find_package()`:
 
 ```cmake
-find_package(cupcake 0.4.0 REQUIRED)
+find_package(cupcake 0.4.1 REQUIRED)
 ```
 
 Unlike [`include()`][include], [`find_package()`][find_package] lets us easily
@@ -34,10 +34,10 @@ You can either:
     conan export .
     ```
 
-Then add `cupcake/0.4.0` as a non-tool requirement to your conanfile:
+Then add `cupcake/0.4.1` as a non-tool requirement to your conanfile:
 
 ```
-requires = ['cupcake/0.4.0']
+requires = ['cupcake/0.4.1']
 ```
 
 [Tool requirements][tool_requires] cannot [modify][6] the `CMAKE_PREFIX_PATH`
@@ -288,7 +288,7 @@ def package_info(self):
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.7)
 project(package_name LANGUAGES CXX)
-find_package(cupcake 0.4.0 REQUIRED)
+find_package(cupcake 0.4.1 REQUIRED)
 cupcake_project()
 cupcake_find_package(dependency_name 1.0)
 cupcake_add_library(library_name)
