@@ -2,18 +2,19 @@
 
 include(CMakeFindDependencyMacro)
 
+# This variable must be exported for `cupcake_install_cpp_info`.
+set(@PROJECT_NAME@_LIBRARIES "@PROJECT_LIBRARIES@")
+
 # Package Configuration Files define all variables in the calling scope.
 # We don't want to interfere with the caller's variables by default.
-block()
+# CMake 3.25 introduces `block()`, but for now we want to support CMake 3.22,
+# the version included in Ubuntu 22.04.
+function(find_@PROJECT_NAME@)
+  set(dependencies "@PROJECT_DEPENDENCIES@")
+  foreach(args ${dependencies})
+    find_dependency(${args})
+  endforeach()
+  include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
+endfunction()
 
-# This variable must be exported for `cupcake_install_cpp_info`.
-set(@PROJECT_NAME@_LIBRARIES "@PROJECT_LIBRARIES@" PARENT_SCOPE)
-
-set(dependencies "@PROJECT_DEPENDENCIES@")
-foreach(args ${dependencies})
-  find_dependency(${args})
-endforeach()
-
-include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
-
-endblock()
+find_@PROJECT_NAME@()
