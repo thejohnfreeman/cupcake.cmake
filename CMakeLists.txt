@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(cupcake VERSION 0.4.1 LANGUAGES NONE)
+project(cupcake VERSION 0.4.2 LANGUAGES NONE)
 
 include(CMakePackageConfigHelpers)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
