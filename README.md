@@ -8,7 +8,7 @@ cupcake is a CMake module.
 The recommended method to import cupcake is `find_package()`:
 
 ```cmake
-find_package(cupcake 0.4.1 REQUIRED)
+find_package(cupcake REQUIRED)
 ```
 
 Unlike [`include()`][include], [`find_package()`][find_package] lets us easily
@@ -34,7 +34,7 @@ You can either:
     conan export .
     ```
 
-Then add `cupcake/0.4.1` as a non-tool requirement to your conanfile:
+Then add `cupcake` as a non-tool requirement to your conanfile:
 
 ```
 requires = ['cupcake/0.4.1']
@@ -98,20 +98,24 @@ the top-level `CMakeLists.txt`, and thus it cannot be wrapped.
 ### `cupcake_find_package`
 
 ```
-cupcake_find_package(<package-name> <version> [PRIVATE] ...)
+cupcake_find_package(<package-name> [<version>] [PRIVATE] ...)
 ```
 
 Import targets for a dependency by calling [`find_package()`][find_package].
 
 `<version>` is forwarded to `find_package()`,
-but note that it is a required parameter for this command.
+but it is an optional parameter for this command.
+I recommend that you do _not_ include it.
+Instead, version declaration and checking should happen
+at the package manager level, e.g. in your Conan recipe.
 
 In the underlying call to `find_package()`,
 `REQUIRED` is always passed so that missing dependencies raise an error.
 Optional dependencies should always be guarded by an option, rather than
 conditionally linking based on whether or not CMake succeeded in finding them.
 
-Unless `PRIVATE` is passed, this call saves the package name and version
+Unless `PRIVATE` is passed, this call saves the package name
+(and version, if given)
 in a list of dependencies for the project.
 That list affects the behavior of `cupcake_install_project()`:
 the generated package configuration file will transitively call
@@ -288,7 +292,7 @@ def package_info(self):
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.7)
 project(package_name LANGUAGES CXX)
-find_package(cupcake 0.4.1 REQUIRED)
+find_package(cupcake REQUIRED)
 cupcake_project()
 cupcake_find_package(dependency_name 1.0)
 cupcake_add_library(library_name)
