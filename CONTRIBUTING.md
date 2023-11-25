@@ -43,6 +43,7 @@ Once development has finished, publish a new version of `cupcake`:
 tag = ...
 git tag $tag
 git push
+git push --tag
 conan export .
 conan upload --remote github cupcake/$tag@github/thejohnfreeman
 ```
