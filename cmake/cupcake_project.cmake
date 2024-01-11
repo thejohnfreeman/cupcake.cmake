@@ -96,6 +96,9 @@ macro(cupcake_project)
   install(TARGETS ${target} EXPORT ${PROJECT_EXPORT_SET})
   add_library(${PROJECT_NAME}::dependencies::main ALIAS ${target})
 
+  # This command should be called when
+  # `CMAKE_CURRENT_SOURCE_DIR == PROJECT_SOURCE_DIR`,
+  # but when it isn't, we want to look in `PROJECT_SOURCE_DIR`.
   set(path "${PROJECT_SOURCE_DIR}/cupcake.json")
   if(EXISTS "${path}")
     file(READ "${path}" PROJECT_JSON)
