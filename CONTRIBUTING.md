@@ -1,64 +1,33 @@
-## Test
+Cupcake is developed on the `develop` branch.
+In this branch, the version string in `conanfile.py` is `alpha`.
+The version string in `CMakeLists.txt` is `0.0.0`
+only because `alpha` is not [allowed][2].
 
-The tests for this package
-are the project templates in [project-template-cpp][].
+The `develop` branch is a submodule of [project-template-cpp][]
+at path `/cupcake/`.
+That repository contains the tests for Cupcake.
+See their [instructions][1].
 
-Development on this package generally follows
-an iteration cycle after initial setup:
-
-1. Bump the version of this package, `cupcake`.
-    ```
-    # in cupcake
-    sed -i 's/0\.4\.1/0.4.2/' CMakeLists.txt conanfile.py README.md
-    ```
-2. Bump the version depended in project-template-cpp.
-    ```
-    # in project-template-cpp
-    sed -i 's#cupcake/0.4.1#cupcake/0.4.2#' */conanfile.py */conanfile.txt
-    ```
-
-3. Make changes to `cupcake`.
-4. Export a new revision of `cupcake`
-    under the new version number
-    to the local Conan cache.
-    ```
-    # in cupcake
-    conan export .
-    ```
-4. Execute the tests in project-template-cpp.
-    ```
-    # in project-template-cpp
-    GENERATOR=Ninja SHARED=OFF FLAVOR=release poetry run pytest
-    ```
-    (Passing all 96 configurations sequentially takes about 11 minutes.)
-5. Loop back to step 3.
-
-
-## Publish
-
-Once development has finished, publish a new version of `cupcake`:
+When Cupcake is ready for release,
+the `develop` branch is merged into `master`,
+the version strings are changed,
+and the commit is tagged.
+This way, the version strings in the `develop` branch are never changed.
 
 ```
-# in cupcake
-tag = ...
-git tag $tag
+git checkout master
+git merge develop
+version=...
+sed -i "s/alpha/${version}/" CMakeLists.txt conanfile.py README.md
+git commit
+git tag $version
 git push
 git push --tag
 conan export .
-conan upload --remote github cupcake/$tag@github/thejohnfreeman
-```
-
-Don't forget to update the tests:
-
-```
-# in project-template-cpp
-pushd cupcake
-git pull origin $tag
-popd
-git add cupcake
-git commit
-git push
+conan upload --remote github cupcake/${version}@github/thejohnfreeman
 ```
 
 
 [project-template-cpp]: https://github.com/thejohnfreeman/project-template-cpp
+[1]: https://github.com/thejohnfreeman/project-template-cpp/blob/master/CONTRIBUTING.md
+[2]: https://gitlab.kitware.com/cmake/cmake/-/issues/16716
