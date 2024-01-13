@@ -37,7 +37,7 @@ You can either:
 Then add `cupcake` as a non-tool requirement to your conanfile:
 
 ```
-requires = ['cupcake/alpha']
+requires = ['cupcake/0.5.0']
 ```
 
 [Tool requirements][tool_requires] cannot [modify][6] the `CMAKE_PREFIX_PATH`
