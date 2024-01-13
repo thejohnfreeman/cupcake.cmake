@@ -3,7 +3,7 @@ from conan.tools.cmake import CMake, CMakeToolchain
 
 class Cupcake(ConanFile):
     name = 'cupcake'
-    version = 'alpha'
+    version = '0.5.0'
     default_user = 'github'
     default_channel = 'thejohnfreeman'
 
