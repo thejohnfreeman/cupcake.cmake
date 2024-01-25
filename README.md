@@ -71,7 +71,7 @@ add_subdirectory(path/to/cupcake)
 - [`cupcake_add_subproject`](#cupcake_add_subproject)
 - [`cupcake_add_library`](#cupcake_add_library)
 - [`cupcake_add_executable`](#cupcake_add_executable)
-- [`cupcake_add_tests`](#cupcake_add_tests)
+- [`cupcake_enable_testing`](#cupcake_enable_testing)
 - [`cupcake_add_test_executable`](#cupcake_add_test_executable)
 - [`cupcake_install_project`](#cupcake_install_project)
 - [`cupcake_install_cpp_info`](#cupcake_install_cpp_info)
@@ -198,10 +198,10 @@ An executable must have sources, and they should be either
 the single file `src/<name>.cpp`
 or every `.cpp` file under the directory `src/<name>`.
 
-### `cupcake_add_tests`
+### `cupcake_enable_testing`
 
 ```
-cupcake_add_tests()
+cupcake_enable_testing()
 ```
 
 Conditionally adds tests to the project.
@@ -299,7 +299,7 @@ cupcake_add_library(library_name)
 target_link_libraries(${this} PUBLIC dependency_name::target_name)
 cupcake_add_executable(executable_name)
 target_link_libraries(${this} PUBLIC package_name::library_name)
-cupcake_add_tests()
+cupcake_enable_testing()
 cupcake_install_project()
 ```
 

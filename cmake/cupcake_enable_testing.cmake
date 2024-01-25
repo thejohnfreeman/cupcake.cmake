@@ -1,6 +1,6 @@
 include_guard(GLOBAL)
 
-macro(cupcake_add_tests)
+macro(cupcake_enable_testing)
   # Do not add unexported targets when added as a subproject.
   if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
     include(CTest)
