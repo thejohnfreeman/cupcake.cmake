@@ -33,7 +33,7 @@ function(cupcake_add_executable name)
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/${name}"
   )
 
-  cupcake_find_sources(sources ${name})
+  cupcake_find_sources(sources ${name} src)
   target_sources(${target} PRIVATE ${sources})
 
   set_target_properties(${target} PROPERTIES

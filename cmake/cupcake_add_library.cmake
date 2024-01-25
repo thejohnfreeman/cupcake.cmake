@@ -61,7 +61,7 @@ function(cupcake_add_library name)
       PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}"
     )
 
-    cupcake_find_sources(sources lib${name})
+    cupcake_find_sources(sources lib${name} src)
     target_sources(${target} PRIVATE ${sources})
     set_target_properties(${target} PROPERTIES
       OUTPUT_NAME ${name}
