@@ -4,7 +4,7 @@ include(cupcake_find_sources)
 
 add_custom_target(tests)
 
-function(cupcake_add_test_executable name)
+function(cupcake_add_test name)
   set(target ${PROJECT_NAME}.test.${name})
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} EXCLUDE_FROM_ALL ${ARGN})

@@ -72,7 +72,7 @@ add_subdirectory(path/to/cupcake)
 - [`cupcake_add_library`](#cupcake_add_library)
 - [`cupcake_add_executable`](#cupcake_add_executable)
 - [`cupcake_enable_testing`](#cupcake_enable_testing)
-- [`cupcake_add_test_executable`](#cupcake_add_test_executable)
+- [`cupcake_add_test`](#cupcake_add_test)
 - [`cupcake_install_project`](#cupcake_install_project)
 - [`cupcake_install_cpp_info`](#cupcake_install_cpp_info)
 
@@ -219,16 +219,17 @@ subdirectory.
 Dependencies that only the tests require should be imported there too.
 
 
-### `cupcake_add_test_executable`
+### `cupcake_add_test`
 
 ```
-cupcake_add_test_executable(<name>)
+cupcake_add_test(<name>)
 ```
 
 Add a target for a test executable.
 
-This command should be called only from `tests/CMakeLists.txt`.
-All relative paths mentioned here are relative to `tests/`.
+This command should be called only from the `tests` subdirectory,
+where all tests should live.
+All relative paths mentioned here are relative to that directory.
 
 The target is given an unspecified name.
 The variable `this` is defined in the parent scope just as it is by
@@ -306,7 +307,7 @@ cupcake_install_project()
 ```cmake
 # tests/CMakeLists.txt
 cupcake_find_package(test_dependency_name 1.0)
-cupcake_add_test_executable(test_name)
+cupcake_add_test(test_name)
 target_link_libraries(${this}
     test_dependency_name::target_name
     package_name::library_name
