@@ -24,10 +24,10 @@ function(cupcake_link_libraries target scope group)
 
   string(
     JSON dependencies ERROR_VARIABLE error
-    GET "${PROJECT_JSON}" dependencies ${group}
+    GET "${PROJECT_JSON}" groups ${group} dependencies
   )
   if(error)
-    message(DEBUG "missing dependencies.${group}")
+    message(DEBUG "missing groups.${group}.dependencies")
     return()
   endif()
 
