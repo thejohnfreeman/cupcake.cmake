@@ -91,10 +91,10 @@ macro(cupcake_project)
     set(CMAKE_INSTALL_RPATH ${origin} ${origin}/${relDir})
   endif()
 
-  set(target ${PROJECT_NAME}.dependencies.main)
+  set(target ${PROJECT_NAME}.imports.main)
   add_library(${target} INTERFACE)
   install(TARGETS ${target} EXPORT ${PROJECT_EXPORT_SET})
-  add_library(${PROJECT_NAME}::dependencies::main ALIAS ${target})
+  add_library(${PROJECT_NAME}::imports::main ALIAS ${target})
 
   # This command should be called when
   # `CMAKE_CURRENT_SOURCE_DIR == PROJECT_SOURCE_DIR`,
