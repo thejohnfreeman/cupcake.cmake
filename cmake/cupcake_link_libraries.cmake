@@ -1,5 +1,7 @@
 include_guard(GLOBAL)
 
+include(cupcake_assert_special)
+
 function(list_from_array out array)
   set(tmp "")
   string(JSON count LENGTH "${array}")
@@ -17,10 +19,7 @@ endfunction()
 # of every dependency in the given group.
 # TODO: Default `group` to `main`.
 function(cupcake_link_libraries target scope group)
-  if(NOT PROJECT_JSON)
-    message(DEBUG "missing cupcake.json")
-    return()
-  endif()
+  cupcake_assert_special()
 
   string(
     JSON dependencies ERROR_VARIABLE error

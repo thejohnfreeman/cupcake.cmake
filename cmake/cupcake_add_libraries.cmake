@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
 include(cupcake_add_library)
+include(cupcake_assert_special)
 
 # json_get(variable json default [key...])
 function(json_get variable json type default)
@@ -22,10 +23,7 @@ function(json_get variable json type default)
 endfunction()
 
 function(cupcake_add_libraries group)
-  if(NOT PROJECT_JSON)
-    message(DEBUG "missing cupcake.json")
-    return()
-  endif()
+  cupcake_assert_special()
 
   json_get(libraries "${PROJECT_JSON}" ARRAY "[]" groups ${group} libraries)
   # libraries :: [{ name :: string, links? :: array }]

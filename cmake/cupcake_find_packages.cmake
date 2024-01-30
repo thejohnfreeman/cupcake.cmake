@@ -1,14 +1,12 @@
 include_guard(GLOBAL)
 
+include(cupcake_assert_special)
 include(cupcake_find_package)
 
 # Call cupcake_find_package for every dependency in the given group.
 # TODO: Default `group` to `main`.
 function(cupcake_find_packages group)
-  if(NOT PROJECT_JSON)
-    message(DEBUG "missing cupcake.json")
-    return()
-  endif()
+  cupcake_assert_special()
 
   string(
     JSON dependencies ERROR_VARIABLE error
