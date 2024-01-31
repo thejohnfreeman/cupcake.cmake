@@ -25,16 +25,23 @@ function(cupcake_add_libraries)
 
       cupcake_json_get(links ARRAY "[]" "${library}" links)
       # links :: [
-      #   { target :: string, scope? :: PUBLIC | PRIVATE | INTERFACE }
+      #   | string
+      #   | { target :: string, scope? :: PUBLIC | PRIVATE | INTERFACE }
       # ]
       string(JSON count LENGTH "${links}")
       if(count GREATER 0)
         math(EXPR stop "${count} - 1")
         foreach(j RANGE ${stop})
           string(JSON link GET "${links}" ${j})
-          string(JSON target GET "${link}" target)
+          string(JSON type TYPE "${links}" ${j})
+          if(type STREQUAL STRING)
+            set(target "${link}")
+            set(scope "PUBLIC")
+          else()
+            string(JSON target GET "${link}" target)
+            cupcake_json_get(scope STRING "PUBLIC" "${link}" scope)
+          endif()
           cmake_language(EVAL CODE "set(target ${target})")
-          cupcake_json_get(scope STRING "PUBLIC" "${link}" scope)
           target_link_libraries(${this} ${scope} ${target})
         endforeach()
       endif()
