@@ -4,7 +4,12 @@ include(cupcake_add_executable)
 include(cupcake_assert_special)
 include(cupcake_json)
 
-function(cupcake_add_executables group)
+function(cupcake_add_executables)
+  if(ARGC GREATER 0)
+    list(POP_FRONT ARGN group)
+  else()
+    set(group main)
+  endif()
   cupcake_assert_special()
   cupcake_json_get(executables ARRAY "[]" "${PROJECT_JSON}" groups ${group} executables)
   # executables :: [{ name :: string, links? :: array }]

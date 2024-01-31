@@ -4,7 +4,12 @@ include(cupcake_add_library)
 include(cupcake_assert_special)
 include(cupcake_json)
 
-function(cupcake_add_libraries group)
+function(cupcake_add_libraries)
+  if(ARGC GREATER 0)
+    list(POP_FRONT ARGN group)
+  else()
+    set(group main)
+  endif()
   cupcake_assert_special()
   cupcake_json_get(libraries ARRAY "[]" "${PROJECT_JSON}" groups ${group} libraries)
   # libraries :: [{ name :: string, links? :: array }]

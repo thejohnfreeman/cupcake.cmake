@@ -4,7 +4,12 @@ include(cupcake_add_test)
 include(cupcake_assert_special)
 include(cupcake_json)
 
-function(cupcake_add_tests group)
+function(cupcake_add_tests)
+  if(ARGC GREATER 0)
+    list(POP_FRONT ARGN group)
+  else()
+    set(group test)
+  endif()
   cupcake_assert_special()
   cupcake_json_get(tests ARRAY "[]" "${PROJECT_JSON}" groups ${group} tests)
   # tests :: [{ name :: string, links? :: array }]
