@@ -1,16 +1,15 @@
 include_guard(GLOBAL)
 
+include(cupcake_find_sources)
+
 add_custom_target(tests)
 
-function(cupcake_add_test_executable name)
+function(cupcake_add_test name)
   set(target ${PROJECT_NAME}.test.${name})
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} EXCLUDE_FROM_ALL ${ARGN})
 
-  file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/${name}/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cpp"
-  )
+  cupcake_find_sources(sources ${name})
   target_sources(${target} PRIVATE ${sources})
 
   # if(PROJECT_IS_TOP_LEVEL)

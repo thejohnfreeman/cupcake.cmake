@@ -1,29 +1,29 @@
 include_guard(GLOBAL)
 
-include(cupcake_add_test)
+include(cupcake_add_library)
 include(cupcake_assert_special)
 include(cupcake_json)
 
-function(cupcake_add_tests)
+function(cupcake_add_libraries)
   if(ARGC GREATER 0)
     list(POP_FRONT ARGN group)
   else()
-    set(group test)
+    set(group main)
   endif()
   cupcake_assert_special()
-  cupcake_json_get(tests ARRAY "[]" "${PROJECT_JSON}" groups ${group} tests)
-  # tests :: [{ name :: string, links? :: array }]
-  string(JSON count LENGTH "${tests}")
+  cupcake_json_get(libraries ARRAY "[]" "${PROJECT_JSON}" groups ${group} libraries)
+  # libraries :: [{ name :: string, links? :: array }]
+  string(JSON count LENGTH "${libraries}")
   if(count GREATER 0)
     math(EXPR stop "${count} - 1")
     foreach(i RANGE ${stop})
-      string(JSON test GET "${tests}" ${i})
+      string(JSON library GET "${libraries}" ${i})
 
-      string(JSON name GET "${test}" name)
+      string(JSON name GET "${library}" name)
       # If ${name} is a JSON string, it is unquoted here.
-      cupcake_add_test(${name} "${ARGN}")
+      cupcake_add_library(${name} "${ARGN}")
 
-      cupcake_json_get(links ARRAY "[]" "${test}" links)
+      cupcake_json_get(links ARRAY "[]" "${library}" links)
       # links :: [
       #   | string
       #   | { target :: string, scope? :: PUBLIC | PRIVATE | INTERFACE }
@@ -36,10 +36,10 @@ function(cupcake_add_tests)
           string(JSON type TYPE "${links}" ${j})
           if(type STREQUAL STRING)
             set(target "${link}")
-            set(scope "PRIVATE")
+            set(scope "PUBLIC")
           else()
             string(JSON target GET "${link}" target)
-            cupcake_json_get(scope STRING "PRIVATE" "${link}" scope)
+            cupcake_json_get(scope STRING "PUBLIC" "${link}" scope)
           endif()
           cmake_language(EVAL CODE "set(target ${target})")
           target_link_libraries(${this} ${scope} ${target})
