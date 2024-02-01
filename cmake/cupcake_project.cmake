@@ -104,4 +104,6 @@ macro(cupcake_project)
     file(READ "${path}" PROJECT_JSON)
     set(${PROJECT_NAME}_JSON "${PROJECT_JSON}")
   endif()
+
+  set(${PROJECT_NAME}_FOUND 1)
 endmacro()
