@@ -25,6 +25,7 @@ macro(cupcake_install_project)
 
   cupcake_get_project_property(PROJECT_DEPENDENCIES)
   cupcake_get_project_property(PROJECT_LIBRARIES)
+  string(RANDOM random)
   configure_package_config_file(
     "${CUPCAKE_MODULE_DIR}/data/package-config.cmake.in"
     "${PROJECT_EXPORT_DIR}/${PROJECT_NAME}-config.cmake"
