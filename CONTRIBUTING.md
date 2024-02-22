@@ -18,8 +18,7 @@ This way, the version strings in the `develop` branch are never changed.
 git checkout master
 git pull --no-ff origin develop
 version=...
-sed -i "s/alpha/${version}/" conanfile.py README.md
-sed -i "s/0.0.0/${version}/" CMakeLists.txt
+sed -i "s/x.y.z/${version}/" conanfile.py README.md CMakeLists.txt
 git commit --all --message "Bump version to ${version}"
 git tag $version
 git push
