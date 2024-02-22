@@ -9,7 +9,9 @@ set(@PROJECT_NAME@_LIBRARIES "@PROJECT_LIBRARIES@")
 # We don't want to interfere with the caller's variables by default.
 # CMake 3.25 introduces `block()`, but for now we want to support CMake 3.22,
 # the version included in Ubuntu 22.04.
-function(find_@PROJECT_NAME@)
+# The function needs a unique name, but we cannot use @PROJECT_NAME@
+# because it may not be a legal CMake identifier.
+function(find_@random@)
   set(dependencies "@PROJECT_DEPENDENCIES@")
   foreach(args ${dependencies})
     find_dependency(${args})
@@ -17,4 +19,4 @@ function(find_@PROJECT_NAME@)
   include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
 endfunction()
 
-find_@PROJECT_NAME@()
+find_@random@()
