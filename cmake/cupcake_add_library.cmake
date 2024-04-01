@@ -48,10 +48,30 @@ function(cupcake_add_library name)
   endif()
 
   cupcake_generate_version_header(${name})
-  # Each library has one public header directory under include/.
+
+  # Each library has one public header directory under `include/`.
+  # We want to isolate them from each other,
+  # meaning that they cannot inadvertently include each other
+  # without declaring an explicit link
+  # just because their includes are relative to the same `include/` directory.
+  # To implement isolation at build time,
+  # we create a _new_ include directory under the build directory
+  # that contains only symbolic links to the library's own public headers.
+  set(dir "${CMAKE_CURRENT_BINARY_DIR}/include/${target}")
+  file(MAKE_DIRECTORY "${dir}")
+  foreach(lname "${name}" "${name}.h" "${name}.hpp")
+    file(CREATE_LINK
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
+      "${dir}/${name}"
+      SYMBOLIC
+    )
+  endforeach()
+
   target_include_directories(${target} ${public}
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<BUILD_INTERFACE:${dir}>"
     "$<BUILD_INTERFACE:${CMAKE_INCLUDE_OUTPUT_DIRECTORY}>"
+    # TODO: Verify that the `INSTALL_INTERFACE` is implemented by
+    # `install(TARGETS ... INCLUDES DESTINATION ...)` below.
   )
 
   get_target_property(type ${target} TYPE)
