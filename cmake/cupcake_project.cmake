@@ -6,10 +6,8 @@ macro(cupcake_project)
 
   # Define more project variables.
   set(PROJECT_EXPORT_SET ${PROJECT_NAME}_targets)
-
   set(PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-  set(PROJECT_EXPORT_DIR "${PROJECT_BINARY_DIR}/export/${PROJECT_NAME}")
-
+  set(PROJECT_EXPORT_DIR "${CMAKE_BINARY_DIR}/export/${PROJECT_NAME}")
   set(CMAKE_INSTALL_EXPORTDIR share)
 
   #if(PROJECT_IS_TOP_LEVEL)
@@ -30,22 +28,38 @@ macro(cupcake_project)
   # In other words, if a subproject installs a library to
   # CMAKE_INSTALL_LIBDIR, then it may end up somewhere other than the
   # CMAKE_INSTALL_LIBDIR that the top-level project looks in.
-  if(NOT CMAKE_OUTPUT_PREFIX)
-    set(CMAKE_OUTPUT_PREFIX "${CMAKE_BINARY_DIR}/output/$<CONFIG>")
+  # We use root source and binary directories instead of current directories
+  # because outputs from all subprojects must end up in the same directory.
+  if(DEFINED ENV{CMAKE_OUTPUT_DIR})
+    set(CMAKE_OUTPUT_DIR_DEFAULT "$ENV{CMAKE_OUTPUT_DIR}")
+    # Seems impossible to get the current working directory.
+    # Use `CMAKE_SOURCE_DIR` for now.
+    # https://stackoverflow.com/a/71109856/618906
+    cmake_path(
+      ABSOLUTE_PATH CMAKE_OUTPUT_DIR_DEFAULT
+      BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+  else()
+    set(CMAKE_OUTPUT_DIR_DEFAULT "${CMAKE_BINARY_DIR}/output/")
   endif()
+  set(
+    CMAKE_OUTPUT_DIR "${CMAKE_OUTPUT_DIR_DEFAULT}"
+    CACHE FILEPATH
+    "root directory for interesting outputs"
+  )
+  set(CMAKE_OUTPUT_PREFIX "${CMAKE_OUTPUT_DIR}/$<CONFIG>")
+
   if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_OUTPUT_PREFIX}/bin")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_OUTPUT_PREFIX}/${CMAKE_INSTALL_BINDIR}")
   endif()
   if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_OUTPUT_PREFIX}/lib")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_OUTPUT_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
   endif()
   if(NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_OUTPUT_PREFIX}/lib")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_OUTPUT_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
   endif()
-  if(NOT CMAKE_INCLUDE_OUTPUT_DIRECTORY)
-    set(CMAKE_INCLUDE_OUTPUT_DIRECTORY
-      "${CMAKE_BINARY_DIR}/output/Common/include"
-    )
+  if(NOT CMAKE_HEADER_OUTPUT_DIRECTORY)
+    set(CMAKE_HEADER_OUTPUT_DIRECTORY "${CMAKE_OUTPUT_DIR}/Common/${CMAKE_INSTALL_INCLUDEDIR}")
   endif()
 
   # Search for Package Configuration Files first.
@@ -58,15 +72,11 @@ macro(cupcake_project)
   # Cupcake projects must put their Find Modules in `external/`.
   list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/external")
 
-  if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(OSX TRUE)
-  endif()
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(LINUX TRUE)
-  endif()
-  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(WINDOWS TRUE)
-  endif()
+  # See `CMAKE_SYSTEM_NAME` to identify the platform,
+  # but see "variables that describe the system"
+  # to identify families of platforms.
+  # The Big Three are best approximated with `APPLE`, `LINUX`, and `WIN32`.
+  # https://cmake.org/cmake/help/latest/manual/cmake-variables.7.html#variables-that-describe-the-system
 
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
   set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
@@ -79,7 +89,7 @@ macro(cupcake_project)
   if("CXX" IN_LIST languages OR "C" IN_LIST languages)
     include(GNUInstallDirs)
     # Use relative rpath for installation.
-    if(OSX)
+    if(APPLE)
       set(origin @loader_path)
     else()
       set(origin $ORIGIN)

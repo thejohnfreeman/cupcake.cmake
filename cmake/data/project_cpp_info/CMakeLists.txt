@@ -156,6 +156,6 @@ string(APPEND cpp_info
 declare_libraries(cpp_info ${${PACKAGE_NAME}_LIBRARIES})
 
 file(GENERATE
-  OUTPUT "${CMAKE_INSTALL_PREFIX}/share/${PACKAGE_NAME}/cpp_info.py"
+  OUTPUT "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_EXPORTDIR}/${PACKAGE_NAME}/cpp_info.py"
   CONTENT "${cpp_info}"
 )

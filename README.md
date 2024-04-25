@@ -1,17 +1,21 @@
-# cupcake
+# cupcake.cmake
 
-cupcake is a CMake module.
+cupcake.cmake is a CMake module.
+It is named with the .cmake extension to distinguish it from [cupcake.py][],
+which is a Python tool for working with Conan and CMake projects,
+with additional features for projects using cupcake.cmake.
 
 
 ## Install
 
-The recommended method to import cupcake is `find_package()`:
+The recommended method to import cupcake.cmake is with
+[`find_package()`][find_package]:
 
 ```cmake
-find_package(cupcake REQUIRED)
+find_package(cupcake.cmake REQUIRED)
 ```
 
-Unlike [`include()`][include], [`find_package()`][find_package] lets us easily
+Unlike [`include()`][include], `find_package()` lets us easily
 check version compatibility and lean on package managers like Conan.
 For that to work, an installation must be found on the
 [`CMAKE_PREFIX_PATH`][CMAKE_PREFIX_PATH].
@@ -19,7 +23,16 @@ There are a few ways to accomplish that.
 
 ### Install from Conan
 
-First, you need to tell Conan how to find cupcake.
+First, add `cupcake.cmake` as a non-tool[^1] requirement to your Conan recipe:
+
+```
+requires = ['cupcake.cmake/<version>']
+```
+
+[^1]: The `CMakeDeps` generator will [not generate][6]
+a Package Configuration File for a [tool requirement][tool_requires].
+
+Second, tell Conan how to find cupcake.cmake.
 You can either:
 
 - Point it to my public [Redirectory][]:
@@ -34,25 +47,17 @@ You can either:
     conan export .
     ```
 
-Then add `cupcake` as a non-tool requirement to your conanfile:
-
-```
-requires = ['cupcake/alpha']
-```
-
-[Tool requirements][tool_requires] cannot [modify][6] the `CMAKE_PREFIX_PATH`
-as of 2023-02-02.
-
 
 ### Install manually
 
 ```shell
 # In this project:
-cmake -B .build -DCMAKE_INSTALL_PREFIX=<path> .
-cmake --build .build --target install
+cmake -B <build-dir> -DCMAKE_INSTALL_PREFIX=<path> .
+cmake --build <build-dir> --target install
 # In your project:
-cmake -B .build -DCMAKE_PREFIX_PATH=<path> .
+cmake -B <build-dir> -DCMAKE_PREFIX_PATH=<path> .
 ```
+
 
 ### Install as submodule
 
@@ -60,11 +65,22 @@ Alternatively, you can embed this project in yours as a submodule and import
 it with [`add_subdirectory()`][add_subdirectory]:
 
 ```cmake
-add_subdirectory(path/to/cupcake)
+add_subdirectory(path/to/cupcake.cmake)
 ```
 
 
 ## Interface
+
+There are two categories of commands, general and special.
+**General commands** have no special requirements,
+but **special commands** require a `cupcake.json` file
+in the project's root directory.
+Special commands effectively relocate essential CMake configuration data
+from multiple CMake listfiles sprinkled throughout a project
+to a single JSON file that is more easily read and written by other tools.
+
+
+### General commands
 
 - [`cupcake_project`](#cupcake_project)
 - [`cupcake_find_package`](#cupcake_find_package)
@@ -83,16 +99,174 @@ add_subdirectory(path/to/cupcake)
 cupcake_project()
 ```
 
-Define project variables used by other cupcake commands,
-and choose different defaults for built-in CMake commands.
+Define project variables used by other cupcake.cmake commands,
+and choose different defaults for built-in CMake commands and variables.
 
 `cupcake_project()` must be called after a call of the built-in CMake command
-[`project()`][project] and before any other cupcake commands in that project.
-It takes no arguments directly, instead taking them all from the variables set
-by the call to `project()`.
+[`project()`][project] and before any other cupcake.cmake commands in that project.
+It should be called in the project's root `CMakeLists.txt`.
+The recommended pattern looks like this:
+
+```cmake
+project(${PROJECT_NAME} LANGUAGES CXX)
+find_package(cupcake REQUIRED)
+cupcake_project()
+```
+
+`cupcake_project()` takes no arguments directly,
+instead taking them all from the variables set by the call to `project()`.
 I would have liked this command to wrap the call to `project()`, if possible,
 but CMake [requires][1] a "literal, direct call to the `project()` command" in
-the top-level `CMakeLists.txt`, and thus it cannot be wrapped.
+the root `CMakeLists.txt`, and thus it cannot be wrapped.
+
+`cupcake_project()` adds one special `INTERFACE` library target,
+`${PROJECT_NAME}.imports.main`,
+that projects can use to aggregate the "main" group of required libraries.
+Other targets can conveniently link to this one target
+instead of to each requirement individually,
+and automatically link to new requirements as they are added.
+Projects can use the special command `cupcake_link_libraries()`
+to link all the "main" required libraries listed in `cupcake.json`.
+
+
+<details open>
+<summary>
+
+`cupcake_project()` sets many variables
+that most projects won't need to use directly,
+but which are used internally by CMake and other cupcake.cmake commands.
+
+</summary>
+
+Changes these default behaviors:
+
+|  #  | Variable | Value
+| :-: | -------- | -----
+|  1  | **[`CMAKE_POLICY_DEFAULT_CMP0087`][7]** | `NEW`
+|  2  | **[`CMAKE_FIND_PACKAGE_PREFER_CONFIG`][15]** | `TRUE`
+|  3  | **[`CMAKE_FIND_PACKAGE_SORT_ORDER`][16]** | `NATURAL`
+|  3  | **[`CMAKE_FIND_PACKAGE_SORT_DIRECTION`][17]** | `DEC`
+|  4  | **[`CMAKE_MODULE_PATH`][18]** | `${CMAKE_CURRENT_SOURCE_DIR}/external`
+|  5  | **[`CMAKE_CXX_VISIBILITY_PRESET`][22]** | `hidden`
+|  5  | **[`CMAKE_VISIBILITY_INLINES_HIDDEN`][23]** | `TRUE`
+|  6  | **[`CMAKE_EXPORT_COMPILE_COMMANDS`][25]** | `TRUE`
+|  7  | **[`CMAKE_BUILD_RPATH_USE_ORIGIN`][28]** | `TRUE`
+|  7  | **[`CMAKE_INSTALL_RPATH`][29]** | `${origin} ${origin}/${relDir}`
+|  8  | **[`CMAKE_RUNTIME_OUTPUT_DIRECTORY`][9]** | `${CMAKE_OUTPUT_PREFIX}/${CMAKE_INSTALL_BINDIR}`
+|  8  | **[`CMAKE_LIBRARY_OUTPUT_DIRECTORY`][13]** | `${CMAKE_OUTPUT_PREFIX}/${CMAKE_INSTALL_LIBDIR}`
+|  8  | **[`CMAKE_ARCHIVE_OUTPUT_DIRECTORY`][12]** | `${CMAKE_OUTPUT_PREFIX}/${CMAKE_INSTALL_LIBDIR}`
+
+1. Lets `install(CODE)` use generator expressions,
+which is required by [`cupcake_install_cpp_info()`](#cupcake_install_cpp_info).
+2. Makes `find_package()` try Config mode before Module mode by default.
+3. Sorts packages by latest semantic version when multiple versions are installed.
+4. Lets `find_package()` find the project's [Find Modules][19].
+5. Treats symbols in shared libraries as private by default, hiding them.
+[Harmonizes][24] the default on non-Windows platforms
+with the existing defaults on Windows and for C++ modules.
+Public symbols must be explicitly exported with annotations.
+These annotations are supplied by preprocessor macros
+defined in headers generated for each library by
+[`cupcake_add_library()`](#cupcake_add_library).[^2]
+6. Generates a ["compilation database"][26] file (`compile_commands.json`)
+used by [language servers][27] like [clangd][].
+7. Uses relative rpaths both when building and installing,
+which lets you move your build directory or install prefix
+without breaking the executables underneath.
+8. See section ["Output directory"](#output-directory).
+
+[^2]: If you ever define an inline function in a public header that either
+(a) has its address taken or (b) defines a static variable,
+then you will need to make inlined functions visible
+to ensure that different translation units that see that definition
+resolve its addresses in the same way.
+
+Adds these project variables (different for each subproject):
+
+- **`PROJECT_EXPORT_SET`**:
+    The name of the default [export set][14] for the project's exported targets.
+- **`PROJECT_BINARY_DIR`**:
+    `CMAKE_CURRENT_BINARY_DIR` as of when `cupcake_project()` was last called.
+    Named in the style of [`PROJECT_SOURCE_DIR`][31],
+    which is [`CMAKE_CURRENT_SOURCE_DIR`][32]
+    as of when `project()` was last called.
+- **`PROJECT_EXPORT_DIR`**:
+    The directory in which to place generated export files,
+    i.e. the [Package Configuration File][pcf],
+    the [Package Version File][pvf], and any [target export files][30].
+- **`${PROJECT_NAME}_FOUND`**:
+    `TRUE`, to short-circuit calls to `find_package()`
+    looking for this project's package from nested subprojects (e.g. examples).
+
+Adds these global variables (same for all subprojects):
+
+- **`CMAKE_PROJECT_EXPORT_SET`**:
+    The `PROJECT_EXPORT_SET` of the root project.
+- **`CMAKE_INSTALL_EXPORTDIR`**:
+    The path, relative to the installation prefix
+    ([`CMAKE_INSTALL_PREFIX`][33]),
+    in the style of [`GNUInstallDirs`][8], at which to install
+    CMake Package Configuration Files and other project metadata files
+    (e.g. `cpp_info.py` installed by
+    [`cupcake_install_cpp_info()`](#cupcake_install_cpp_info)).
+    In other words, the string `share`.
+- **`CMAKE_OUTPUT_DIR`**:
+    See section ["Output directory"](#output-directory).
+- **`CMAKE_OUTPUT_PREFIX`**: 
+    See section ["Output directory"](#output-directory).
+- **`CMAKE_HEADER_OUTPUT_DIRECTORY`**:
+    See section ["Output directory"](#output-directory).
+
+
+#### Output directory
+
+CMake has a variable, [`CMAKE_RUNTIME_OUTPUT_DIRECTORY`][9],
+that chooses the default value for the target property
+[`RUNTIME_OUTPUT_DIRECTORY`][10],
+which chooses the output directory for [`RUNTIME`][11] targets,
+which includes executables on all platforms and DLLs on Windows.
+That is, each runtime _target_ (an executable or a DLL)
+has a _property_ `RUNTIME_OUTPUT_DIRECTORY` that chooses where it is placed,
+and the default value for that target property is the value of the _variable_
+`CMAKE_RUNTIME_OUTPUT_DIRECTORY` when the target is added
+(with [`add_executable()`][add_executable] or [`add_library()`][add_library]).
+Setting this variable is necessary on Windows to ensure that DLLs end up in
+the same directory as the executables (including tests) that load them,
+which is where those executables look for them.
+
+We can use this variable and its cousins,
+[`CMAKE_ARCHIVE_OUTPUT_DIRECTORY`][12] (for static libraries) and
+[`CMAKE_LIBRARY_OUTPUT_DIRECTORY`][13]
+(for shared libraries on non-Windows platforms),
+to construct at build-time (i.e. before installation) a directory
+structure that mimics, _in part_, the structure that will be created by an
+installation, and isolated from the intermediate files littering the build
+directory.
+In other words, they let us create a _pseudo-installation_
+where builders (and tools) can inspect and use
+the interesting outputs of a build before they are installed,
+including outputs like tests that will not be installed.
+
+Each build configuration requires a separate pseudo-installation
+because they are not guaranteed to use unique file names.
+Each pseudo-installation is rooted at a `CMAKE_OUTPUT_PREFIX`,
+akin to [`CMAKE_INSTALL_PREFIX`][33].
+All output prefixes are nested under a common output directory,
+`CMAKE_OUTPUT_DIR`, akin to [`CMAKE_BINARY_DIR`][34].
+In fact, `CMAKE_OUTPUT_PREFIX` is just `${CMAKE_OUTPUT_DIR}/$<CONFIG>`.
+
+There is no similar variable
+choosing the output directory for generated headers,
+just like there is no `add_header()` command
+to add a generated header as a target.
+cupcake.cmake fills this gap by defining the variable
+`CMAKE_HEADER_OUTPUT_DIRECTORY`.
+Generated headers are not configuration-specific, though,
+so they are not placed under any output prefix.
+Instead, `CMAKE_HEADER_OUTPUT_DIRECTORY` is just
+`${CMAKE_OUTPUT_DIR}/Common/${CMAKE_INSTALL_INCLUDEDIR}`.
+
+</details>
 
 
 ### `cupcake_find_package`
@@ -187,7 +361,7 @@ cupcake_add_executable(<name>)
 ```
 
 Add a target for an exported executable by calling
-[`add_executable`][add_executable].
+[`add_executable()`][add_executable].
 
 The target will be named `${PROJECT_NAME}::<name>`,
 i.e. `<name>` scoped under the project name.
@@ -210,8 +384,8 @@ The command does nothing if the project is not top-level.
 Dependents generally want to run a dependency's tests only when the dependency
 is installed, if at all, not every time the dependent runs its own tests.
 
-If the project is top-level, then the command imports the [CTest module][].
-If [`BUILD_TESTING`][CTest module] is `ON`, which it is by default,
+If the project is top-level, then the command imports the [CTest module][CTest].
+If [`BUILD_TESTING`][CTest] is `ON`, which it is by default,
 then the command calls [`add_subdirectory(tests)`][add_subdirectory].
 
 Individual tests should be added in the `CMakeLists.txt` of the `tests`
@@ -274,7 +448,7 @@ cupcake_install_cpp_info()
 Install package metadata for Conan.
 
 This command adds an installation rule to install a Python script at
-`${CMAKE_INSTALL_PREFIX}/share/<PackageName>/cpp_info.py`.
+`${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_EXPORTDIR}/<PackageName>/cpp_info.py`.
 That script can be executed within the [`package_info()`][package_info] method
 of a Python conanfile to [fill in the details][2] of the
 [`cpp_info`][cpp_info] attribute:
@@ -326,14 +500,18 @@ target_link_libraries(${this}
 [include]: https://cmake.org/cmake/help/latest/command/include.html
 [project]: https://cmake.org/cmake/help/latest/command/project.html
 [target_link_libraries]: https://cmake.org/cmake/help/latest/command/target_link_libraries.html
-[CTest module]: https://cmake.org/cmake/help/latest/module/CTest.html
+[CTest]: https://cmake.org/cmake/help/latest/module/CTest.html
+[pcf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-configuration-file
+[pvf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-version-file
 
 [Artifactory]: https://docs.conan.io/1/uploading_packages/using_artifactory.html
-[Redirectory]: https://github.com/thejohnfreeman/redirectory
+[Redirectory]: https://conan.jfreeman.dev
 [cpp_info]: https://docs.conan.io/1/reference/conanfile/attributes.html#cpp-info
 [package_info]: https://docs.conan.io/1/reference/conanfile/methods.html#package-info
 [tool_requires]: https://docs.conan.io/1/devtools/build_requires.html
 [requires]: https://docs.conan.io/1/reference/conanfile/attributes.html#requires
+[cupcake.py]: https://github.com/thejohnfreeman/cupcake.py
+[clangd]: https://clangd.llvm.org/
 
 [1]: https://cmake.org/cmake/help/latest/command/project.html#usage
 [2]: https://docs.conan.io/1/creating_packages/package_information.html
@@ -341,3 +519,31 @@ target_link_libraries(${this}
 [4]: https://cmake.org/cmake/help/latest/command/add_library.html#interface-libraries
 [5]: https://cmake.org/cmake/help/latest/command/add_library.html#normal-libraries
 [6]: https://github.com/conan-io/conan/issues/13036
+[7]: https://cmake.org/cmake/help/latest/policy/CMP0087.html
+[8]: https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
+[9]: https://cmake.org/cmake/help/latest/variable/CMAKE_RUNTIME_OUTPUT_DIRECTORY.html
+[10]: https://cmake.org/cmake/help/latest/prop_tgt/RUNTIME_OUTPUT_DIRECTORY.html
+[11]: https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#runtime-output-artifacts
+[12]: https://cmake.org/cmake/help/latest/variable/CMAKE_ARCHIVE_OUTPUT_DIRECTORY.html
+[13]: https://cmake.org/cmake/help/latest/variable/CMAKE_LIBRARY_OUTPUT_DIRECTORY.html
+[14]: https://cmake.org/cmake/help/latest/command/install.html#export
+[15]: https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_PACKAGE_PREFER_CONFIG.html
+[16]: https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_PACKAGE_SORT_ORDER.html
+[17]: https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_PACKAGE_SORT_DIRECTION.html
+[18]: https://cmake.org/cmake/help/latest/variable/CMAKE_MODULE_PATH.html
+[19]: https://cmake.org/cmake/help/book/mastering-cmake/chapter/Finding%20Packages.html
+[20]: https://cmake.org/cmake/help/latest/variable/CMAKE_SYSTEM_NAME.html
+[21]: https://cmake.org/cmake/help/latest/manual/cmake-variables.7.html#variables-that-describe-the-system
+[22]: https://cmake.org/cmake/help/latest/prop_tgt/LANG_VISIBILITY_PRESET.html
+[23]: https://cmake.org/cmake/help/latest/prop_tgt/VISIBILITY_INLINES_HIDDEN.html
+[24]: https://gcc.gnu.org/wiki/Visibility
+[25]: https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html
+[26]: https://clangd.llvm.org/design/compile-commands#compilation-databases
+[27]: https://en.wikipedia.org/wiki/Language_Server_Protocol
+[28]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_RPATH_USE_ORIGIN.html
+[29]: https://cmake.org/cmake/help/latest/prop_tgt/INSTALL_RPATH.html
+[30]: https://cmake.org/cmake/help/latest/command/export.html#exporting-targets
+[31]: https://cmake.org/cmake/help/latest/variable/PROJECT_SOURCE_DIR.html
+[32]: https://cmake.org/cmake/help/latest/variable/CMAKE_CURRENT_SOURCE_DIR.html
+[33]: https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
+[34]: https://cmake.org/cmake/help/latest/variable/CMAKE_BINARY_DIR.html

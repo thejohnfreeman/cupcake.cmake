@@ -69,7 +69,7 @@ function(cupcake_add_library name)
 
   target_include_directories(${target} ${public}
     "$<BUILD_INTERFACE:${dir}>"
-    "$<BUILD_INTERFACE:${CMAKE_INCLUDE_OUTPUT_DIRECTORY}>"
+    "$<BUILD_INTERFACE:${CMAKE_HEADER_OUTPUT_DIRECTORY}>"
     # TODO: Verify that the `INSTALL_INTERFACE` is implemented by
     # `install(TARGETS ... INCLUDES DESTINATION ...)` below.
   )
@@ -93,7 +93,7 @@ function(cupcake_add_library name)
     # must pass the `EXPORT_FILE_NAME` option.
     generate_export_header(${target}
       BASE_NAME ${name}
-      EXPORT_FILE_NAME "${CMAKE_INCLUDE_OUTPUT_DIRECTORY}/${name}/export.hpp"
+      EXPORT_FILE_NAME "${CMAKE_HEADER_OUTPUT_DIRECTORY}/${name}/export.hpp"
     )
     if(NOT type STREQUAL SHARED_LIBRARY)
       # Disable the export definitions.
@@ -136,7 +136,7 @@ function(cupcake_add_library name)
   # installing a target does not install its include directories.
   install(
     DIRECTORY
-      "${CMAKE_INCLUDE_OUTPUT_DIRECTORY}/${name}"
+      "${CMAKE_HEADER_OUTPUT_DIRECTORY}/${name}"
       "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     COMPONENT ${PROJECT_NAME}_development

@@ -38,4 +38,3 @@ function(cupcake_add_test name)
     FIXTURES_SETUP ${target}_fixture
   )
 endfunction()
-
