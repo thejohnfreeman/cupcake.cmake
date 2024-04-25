@@ -8,6 +8,8 @@ include(cupcake_project_properties)
 macro(cupcake_find_package name)
   if(NOT ${name}_FOUND)
 
+    # Because we are in a macro, lexical scope is approximated by
+    # prefixing variable names with a random string.
     string(RANDOM cupcake_scope)
 
     message(STATUS
@@ -16,7 +18,10 @@ macro(cupcake_find_package name)
 
     cmake_parse_arguments(${cupcake_scope} "PRIVATE" "" "" ${ARGN})
 
-    # Prepare to set a variable listing the imported targets.
+    # We want to return a variable listing the imported targets.
+    # We checkpoint the list of imported targets here, _before_ calling
+    # `find_package()`, and then later subtract this checkpoint from the list
+    # of imported targets _after_ calling `find_package()`.
     # https://stackoverflow.com/a/69496683/618906
     get_property(
       ${cupcake_scope}_before
@@ -27,9 +32,6 @@ macro(cupcake_find_package name)
     # if(PROJECT_IS_TOP_LEVEL AND ...)
     if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME AND NOT ${cupcake_scope}_PRIVATE)
       cupcake_set_project_property(
-        # Each item in this list is itself another list,
-        # an argument list for `find_dependency`.
-        # If the version is missing, that's fine.
         APPEND PROPERTY PROJECT_DEPENDENCIES "${name}"
       )
     endif()

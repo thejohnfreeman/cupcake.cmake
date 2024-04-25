@@ -6,7 +6,6 @@ macro(cupcake_project)
 
   # Define more project variables.
   set(PROJECT_EXPORT_SET ${PROJECT_NAME}_targets)
-  set(PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   set(PROJECT_EXPORT_DIR "${CMAKE_BINARY_DIR}/export/${PROJECT_NAME}")
   set(CMAKE_INSTALL_EXPORTDIR share)
 

@@ -30,7 +30,7 @@ requires = ['cupcake.cmake/<version>']
 ```
 
 [^1]: The `CMakeDeps` generator will [not generate][6]
-a Package Configuration File for a [tool requirement][tool_requires].
+a package configuration file for a [tool requirement][tool_requires].
 
 Second, tell Conan how to find cupcake.cmake.
 You can either:
@@ -80,6 +80,8 @@ from multiple CMake listfiles sprinkled throughout a project
 to a single JSON file that is more easily read and written by other tools.
 
 
+<a id="toc" />
+
 ### General commands
 
 - [`cupcake_project`](#cupcake_project)
@@ -93,7 +95,7 @@ to a single JSON file that is more easily read and written by other tools.
 - [`cupcake_install_cpp_info`](#cupcake_install_cpp_info)
 
 
-### `cupcake_project`
+### [`cupcake_project`](#toc)
 
 ```
 cupcake_project()
@@ -128,17 +130,7 @@ and automatically link to new requirements as they are added.
 Projects can use the special command `cupcake_link_libraries()`
 to link all the "main" required libraries listed in `cupcake.json`.
 
-
-<details open>
-<summary>
-
-`cupcake_project()` sets many variables
-that most projects won't need to use directly,
-but which are used internally by CMake and other cupcake.cmake commands.
-
-</summary>
-
-Changes these default behaviors:
+`cupcake_project()` changes these default behaviors:
 
 |  #  | Variable | Value
 | :-: | -------- | -----
@@ -181,24 +173,19 @@ then you will need to make inlined functions visible
 to ensure that different translation units that see that definition
 resolve its addresses in the same way.
 
-Adds these project variables (different for each subproject):
+`cupcake_project()` adds these project variables (different for each subproject):
 
 - **`PROJECT_EXPORT_SET`**:
     The name of the default [export set][14] for the project's exported targets.
-- **`PROJECT_BINARY_DIR`**:
-    `CMAKE_CURRENT_BINARY_DIR` as of when `cupcake_project()` was last called.
-    Named in the style of [`PROJECT_SOURCE_DIR`][31],
-    which is [`CMAKE_CURRENT_SOURCE_DIR`][32]
-    as of when `project()` was last called.
 - **`PROJECT_EXPORT_DIR`**:
     The directory in which to place generated export files,
-    i.e. the [Package Configuration File][pcf],
-    the [Package Version File][pvf], and any [target export files][30].
+    i.e. the [package configuration file][pcf],
+    the [package version file][pvf], and any [target export files][30].
 - **`${PROJECT_NAME}_FOUND`**:
     `TRUE`, to short-circuit calls to `find_package()`
     looking for this project's package from nested subprojects (e.g. examples).
 
-Adds these global variables (same for all subprojects):
+`cupcake_project()` adds these global variables (same for all subprojects):
 
 - **`CMAKE_PROJECT_EXPORT_SET`**:
     The `PROJECT_EXPORT_SET` of the root project.
@@ -206,7 +193,7 @@ Adds these global variables (same for all subprojects):
     The path, relative to the installation prefix
     ([`CMAKE_INSTALL_PREFIX`][33]),
     in the style of [`GNUInstallDirs`][8], at which to install
-    CMake Package Configuration Files and other project metadata files
+    CMake package configuration files and other project metadata files
     (e.g. `cpp_info.py` installed by
     [`cupcake_install_cpp_info()`](#cupcake_install_cpp_info)).
     In other words, the string `share`.
@@ -269,13 +256,13 @@ Instead, `CMAKE_HEADER_OUTPUT_DIRECTORY` is just
 </details>
 
 
-### `cupcake_find_package`
+### [`cupcake_find_package`](#toc)
 
 ```
 cupcake_find_package(<package-name> [<version>] [PRIVATE] ...)
 ```
 
-Import targets for a dependency by calling [`find_package()`][find_package].
+Import targets from a requirement by calling [`find_package()`][find_package].
 
 `<version>` is forwarded to `find_package()`,
 but it is an optional parameter for this command.
@@ -284,27 +271,34 @@ Instead, version declaration and checking should happen
 at the package manager level, e.g. in your Conan recipe.
 
 In the underlying call to `find_package()`,
-`REQUIRED` is always passed so that missing dependencies raise an error.
-Optional dependencies should always be guarded by an option, rather than
+`REQUIRED` is always passed so that missing requirements raise an error.
+Optional requirements should always be guarded by an [option][35],
+e.g. `with_xyz`, rather than
 conditionally linking based on whether or not CMake succeeded in finding them.
 
 Unless `PRIVATE` is passed, this call saves the package name
-(and version, if given)
+(but not the version, even when given)
 in a list of dependencies for the project.
-That list affects the behavior of `cupcake_install_project()`:
-the generated package configuration file will transitively call
+That list is kept in a [`DIRECTORY` property][36]
+of [`PROJECT_SOURCE_DIR`][31] named `PROJECT_DEPENDENCIES`.
+It affects the behavior of
+[`cupcake_install_project()`](#cupcake_install_project):
+the generated [package configuration file][pcf] will transitively call
 [`find_dependency()`][find_dependency] for all non-private dependencies.
 
 Additional arguments are passed through to `find_package()`.
 
+Returns a variable `<package-name>_TARGETS`
+containing a list of the targets imported by the command.
 
-### `cupcake_add_subproject`
+
+### [`cupcake_add_subproject`](#toc)
 
 ```
 cupcake_add_subproject(<name> [PRIVATE] [<path>])
 ```
 
-Import targets for a dependency by calling
+Import targets from a requirement by calling
 [`add_subdirectory()`][add_subdirectory].
 
 `<path>` is forwarded to `add_subdirectory()` as the `<source_dir>` argument.
@@ -319,7 +313,7 @@ the `CMakeLists.txt` of the subdirectory.
 [`cupcake_find_package()`](#cupcake_find_package).
 
 
-### `cupcake_add_library`
+### [`cupcake_add_library`](#toc)
 
 ```
 cupcake_add_library(<name>)
@@ -327,21 +321,20 @@ cupcake_add_library(<name>)
 
 Add a target for an exported library by calling [`add_library`][add_library].
 
-The target will be named `${PROJECT_NAME}::lib<name>`,
-i.e. `lib<name>` scoped under the project name.
-That target will be an [`ALIAS` target][3].
-All target references should use their scoped names, where possible,
-for consistency between internal and external targets.
-Scoped names can only be aliases, but not all commands accept alias targets,
-e.g. in the first argument of
-[`target_link_libraries()`][target_link_libraries].
-This command defines a variable in the parent scope, `this`, with the name of
-the unaliased target for convenient use in such commands.
-Those commands should be called immediately after this one,
+The internal target is named `${PROJECT_NAME}.lib<name>`,
+and the external [`ALIAS` target][3] is named `${PROJECT_NAME}::lib<name>`.
+Commands in the same project should use the internal target name.
+Commands in different projects,
+including downstream projects that import the target,
+should use the external target name.
+
+Returns a variable, `this`, with the name of the internal target
+for convenient use in subsequent commands.
+Commands configuring the target should be called immediately after this one,
 to keep all of a target's configuration in one place.
 
-A library's public, exported headers should be either
-the single file `include/<name>.h`
+A library's public, exported headers must be either
+the single file `include/<name>.hpp` (or `.h`)
 or every file under the directory `include/<name>`.
 Private, unexported headers may be placed under `src/lib<name>`.
 If a library has sources, they should be either
@@ -353,8 +346,27 @@ If a library does have sources, then the target will be a
 [`STATIC` or `SHARED` library][5] depending on the value of variable
 [`BUILD_SHARED_LIBS`][BUILD_SHARED_LIBS].
 
+Each library is given two generated headers.
+These headers are installed with the library (if it is installed).
+Libraries must _not_ define their own public headers with these names.
 
-### `cupcake_add_executable`
+- `<name>/export.hpp`: An [export header][38] with preprocessor macros
+    for annotating public and deprecated symbols in shared libraries.
+    - `${NAME_UPPER}_EXPORT`
+    - `${NAME_UPPER}_DEPRECATED`
+- `<name>/version.hpp`: A version header with preprocessor macros
+    deconstructing the package version string.
+    - `${NAME_UPPER}_VERSION`:
+        A string literal of [`PROJECT_VERSION`][39].
+    - `${NAME_UPPER}_VERSION_MAJOR`:
+        An integer expression equal to [`PROJECT_VERSION_MAJOR`][40].
+    - `${NAME_UPPER}_VERSION_MINOR`:
+        An integer expression equal to [`PROJECT_VERSION_MINOR`][41].
+    - `${NAME_UPPER}_VERSION_PATCH`:
+        An integer expression equal to [`PROJECT_VERSION_PATCH`][42].
+
+
+### [`cupcake_add_executable`](#toc)
 
 ```
 cupcake_add_executable(<name>)
@@ -372,7 +384,7 @@ An executable must have sources, and they should be either
 the single file `src/<name>.cpp`
 or every `.cpp` file under the directory `src/<name>`.
 
-### `cupcake_enable_testing`
+### [`cupcake_enable_testing`](#toc)
 
 ```
 cupcake_enable_testing()
@@ -393,7 +405,7 @@ subdirectory.
 Dependencies that only the tests require should be imported there too.
 
 
-### `cupcake_add_test`
+### [`cupcake_add_test`](#toc)
 
 ```
 cupcake_add_test(<name>)
@@ -421,7 +433,7 @@ This way, resources are not spent building tests unless they are run.
 Tests are re-built if necessary when run.
 
 
-### `cupcake_install_project`
+### [`cupcake_install_project`](#toc)
 
 ```
 cupcake_install_project()
@@ -439,7 +451,7 @@ by passing the name of the project and
 a version string compatible under semantic versioning.
 
 
-### `cupcake_install_cpp_info`
+### [`cupcake_install_cpp_info`](#toc)
 
 ```
 cupcake_install_cpp_info()
@@ -496,7 +508,7 @@ target_link_libraries(${this}
 [add_library]: https://cmake.org/cmake/help/latest/command/add_library.html
 [add_subdirectory]: https://cmake.org/cmake/help/latest/command/add_subdirectory.html
 [find_package]: https://cmake.org/cmake/help/latest/command/find_package.html
-[find_dependency]: https://cmake.org/cmake/help/latest/module/CMakeFindDependencyMacro.html
+[find_dependency]: https://cmake.org/cmake/help/latest/module/CMakeFindDependencyMacro.html#command:find_dependency
 [include]: https://cmake.org/cmake/help/latest/command/include.html
 [project]: https://cmake.org/cmake/help/latest/command/project.html
 [target_link_libraries]: https://cmake.org/cmake/help/latest/command/target_link_libraries.html
@@ -547,3 +559,11 @@ target_link_libraries(${this}
 [32]: https://cmake.org/cmake/help/latest/variable/CMAKE_CURRENT_SOURCE_DIR.html
 [33]: https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
 [34]: https://cmake.org/cmake/help/latest/variable/CMAKE_BINARY_DIR.html
+[35]: https://cmake.org/cmake/help/latest/command/option.html
+[36]: https://cmake.org/cmake/help/latest/command/set_property.html
+[37]: https://cmake.org/cmake/help/latest/variable/CMAKE_SOURCE_DIR.html
+[38]: https://cmake.org/cmake/help/latest/module/GenerateExportHeader.html
+[39]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION.html
+[40]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_MAJOR.html
+[41]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_MINOR.html
+[42]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_PATCH.html
