@@ -29,7 +29,7 @@ First, add `cupcake.cmake` as a non-tool[^1] requirement to your Conan recipe:
 requires = ['cupcake.cmake/<version>']
 ```
 
-[^1]: The `CMakeDeps` generator will [not generate][6]
+[^1]: The [`CMakeDeps`][CMakeDeps] generator will [not generate][6]
 a package configuration file for a [tool requirement][tool_requires].
 
 Second, tell Conan how to find cupcake.cmake.
@@ -78,6 +78,8 @@ in the project's root directory.
 Special commands effectively relocate essential CMake configuration data
 from multiple CMake listfiles sprinkled throughout a project
 to a single JSON file that is more easily read and written by other tools.
+Special commands are documented with example `cupcake.json`
+and Pythonic pseudocode.
 
 
 <a id="toc" />
@@ -104,7 +106,8 @@ to a single JSON file that is more easily read and written by other tools.
 - [`cupcake_add_tests`](#cupcake_add_tests)
 
 
-### [`cupcake_project`](#toc)
+### `cupcake_project`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_project()
@@ -265,7 +268,8 @@ Instead, `CMAKE_HEADER_OUTPUT_DIRECTORY` is just
 </details>
 
 
-### [`cupcake_find_package`](#toc)
+### `cupcake_find_package`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_find_package(<package-name> [<version>] [PRIVATE] ...)
@@ -301,7 +305,8 @@ Remaining arguments are passed through to `find_package()`.
 containing a list of the targets imported by the command.
 
 
-### [`cupcake_add_subproject`](#toc)
+### `cupcake_add_subproject`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_add_subproject(<name> [PRIVATE] [<path>])
@@ -322,7 +327,8 @@ the `CMakeLists.txt` of the subdirectory.
 [`cupcake_find_package()`](#cupcake_find_package).
 
 
-### [`cupcake_add_library`](#toc)
+### `cupcake_add_library`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_add_library(<name> [PRIVATE])
@@ -385,7 +391,8 @@ Libraries must _not_ define their own public headers with these names.
         An integer expression equal to [`PROJECT_VERSION_PATCH`][42].
 
 
-### [`cupcake_add_executable`](#toc)
+### `cupcake_add_executable`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_add_executable(<name> [PRIVATE])
@@ -419,7 +426,8 @@ the single file `src/<name>.cpp`
 or every `.cpp` file under the directory `src/<name>/`.
 
 
-### [`cupcake_enable_testing`](#toc)
+### `cupcake_enable_testing`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_enable_testing()
@@ -446,7 +454,8 @@ subdirectory.
 Dependencies that only the tests require should be imported there too.
 
 
-### [`cupcake_add_test`](#toc)
+### `cupcake_add_test`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_add_test(<name>)
@@ -473,13 +482,14 @@ Each test is given a [fixture][43] that builds (or rebuilds)
 the test before it is run.
 
 
-### [`cupcake_install_project`](#toc)
+### `cupcake_install_project`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_install_project()
 ```
 
-Install all exported targets.
+Add rules to install all exported targets.
 
 This command should be called only once,
 after all exported targets have been added.
@@ -490,13 +500,14 @@ by their external names,
 with [`cupcake_find_package()`](#cupcake_find_package).
 
 
-### [`cupcake_install_cpp_info`](#toc)
+### `cupcake_install_cpp_info`
+[:arrow_up:](#toc) :hash: [general](#interface)
 
 ```
 cupcake_install_cpp_info()
 ```
 
-Install package metadata for Conan.
+Add rules to install package metadata for Conan.
 
 This command adds an installation rule to install a Python script at
 `${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_EXPORTDIR}/<PackageName>/cpp_info.py`.
@@ -512,19 +523,242 @@ def package_info(self):
 ```
 
 
-### [`cupcake_find_packages`](#toc)
+### `cupcake_find_packages`
+[:arrow_up:](#toc) :hash: [special](#interface)
+
+```
+cupcake_find_packages(<group> ...)
+```
+
+Import targets from all requirements belonging to a group.
+
+`cupcake_find_packages()` first selects all objects in the `.imports` array
+of `cupcake.json` with a `.groups` array property (default value `["main"]`)
+that contains `<group>`.
+Then, it calls [`cupcake_find_package()`](#cupcake_find_package)
+for each selected object, passing the `.file` string property of the object
+and any additional arguments that were passed to `cupcake_find_packages()`.
+
+```js
+{
+    "imports": [
+        { "name": "a", "file": "a", "targets": ["a::a"] },
+        { "name": "b", "file": "b", "targets": ["b::b"], "groups": ["main"] },
+        { "name": "c", "file": "c", "targets": ["c::c"], "groups": ["test"] }
+    ]
+}
+```
+
+```python
+def cupcake_find_packages(group, *args):
+    metadata = json.parse('cupcake.json')
+    for package in metadata.get('imports', []):
+        if group in package.get('groups', ['main']):
+            cupcake_find_package(package['file'], *args)
+```
+
+Note: `cupcake_find_packages()` passes the package object's `file` property,
+and not its `name` property,
+because `name` is the name of the package in the Conan ecosystem,
+while `file` is the name of the [package configuration file][pcf]
+that the [`CMakeDeps`][CMakeDeps] generator generates for it,
+corresponding to the [`cmake_file_name` property][44]
+of the package's [`cpp_info`][cpp_info].
 
 
-### [`cupcake_link_libraries`](#toc)
+
+### `cupcake_link_libraries`
+[:arrow_up:](#toc) :hash: [special](#interface)
+
+```cmake
+cupcake_link_libraries(<target> <scope> <group>)
+```
+
+Link a target to all imported targets of all requirements belonging to a group.
+
+`cupcake_link_libraries()` is typically called
+to link a convenience `INTERFACE` target,
+e.g. `${PROJECT_NAME}.imports.main` or `${PROJECT_NAME}.imports.test`,
+to the targets of its corresponding requirement group, following a call
+to [`cupcake_find_packages()`](#cupcake_find_packages) for that group.
+
+`cupcake_link_libraries()` first selects all objects in the `.imports` array
+of `cupcake.json` with a `.groups` array property (default value `["main"]`)
+that contains `<group>`.
+Then, it calls [`target_link_libraries()`][target_link_libraries]
+for each selected object, passing `<target>`, `<scope>`, and
+the `.targets` array property of the object.
+
+`<scope>` must be a [scope][] keyword,
+one of `PUBLIC`, `PRIVATE`, or `INTERFACE`.
+When `<target>` is an `INTERFACE` target, `<scope>` _must_ be `INTERFACE`.
+
+```js
+{
+    "imports": [
+        { "name": "a", "file": "a", "targets": ["a::a"] },
+        { "name": "b", "file": "b", "targets": ["b::b"], "groups": ["main"] },
+        { "name": "c", "file": "c", "targets": ["c::c"], "groups": ["test"] }
+    ]
+}
+```
+
+```python
+def cupcake_link_libraries(target, scope, group):
+    metadata = json.parse('cupcake.json')
+    for package in metadata.get('imports', []):
+        if group in package.get('groups', ['main']):
+            target_link_libraries(target, scope, package['targets'])
+```
 
 
-### [`cupcake_add_libraries`](#toc)
+### `cupcake_add_libraries`
+[:arrow_up:](#toc) :hash: [special](#interface)
+
+```cmake
+cupcake_add_libraries()
+```
+
+Add targets for all libraries in the project.
+
+For each object in the `.libraries` array of `cupcake.json`,
+`cupcake_add_libraries()` first calls
+[`cupcake_add_library()`](#cupcake_add_library)
+with the object's `.name` string property,
+passing `PRIVATE` if the object has a `.private` Boolean property
+that is `true`.
+Then it calls [`target_link_libraries()`][target_link_libraries]
+for each value in the object's `.links` array property.
+
+Each link takes one of two forms.
+If it is a string, then `cupcake_add_libraries()` calls
+`target_link_libraries()` with it as the name of the linked target
+and `PUBLIC` as the scope.
+If it is an object, then `cupcake_add_libraries()` calls
+`target_link_libraries()` with its `.target` string property
+as the name of the linked target and
+its optional `.scope` string property (default value `PUBLIC`) as the scope.
+
+```js
+{
+    "libraries": [
+        { "name": "x", "links": ["a::a"] },
+        { "name": "y", "links": ["b::b", { "target": "c::c", "scope": "PRIVATE" }
+    ]
+}
+```
+
+```python
+def cupcake_add_libraries():
+    metadata = json.parse('cupcake.json')
+    for library in metadata.get('libraries', []):
+        target = cupcake_add_library(
+            library['name'], PRIVATE if library['private'] else None
+        )
+        for link in library.get('links', []):
+            if type(link) == str:
+                target_link_libraries(target, PUBLIC, link)
+            else:
+                target_link_libraries(target, link.get('scope', PUBLIC), link['target'])
+```
 
 
-### [`cupcake_add_executables`](#toc)
+### `cupcake_add_executables`
+[:arrow_up:](#toc) :hash: [special](#interface)
+
+```cmake
+cupcake_add_executables()
+```
+
+Add targets for all executables in the project.
+
+For each object in the `.executables` array of `cupcake.json`,
+`cupcake_add_executables()` first calls
+[`cupcake_add_executable()`](#cupcake_add_executable)
+with the object's `.name` string property,
+passing `PRIVATE` if the object has a `.private` Boolean property
+that is `true`.
+Then it calls [`target_link_libraries()`][target_link_libraries]
+for each value in the object's `.links` array property.
+
+Each link takes one of two forms.
+If it is a string, then `cupcake_add_executables()` calls
+`target_link_libraries()` with it as the name of the linked target
+and `PUBLIC` as the scope.
+If it is an object, then `cupcake_add_executables()` calls
+`target_link_libraries()` with its `.target` string property
+as the name of the linked target and
+its optional `.scope` string property (default value `PUBLIC`) as the scope.
+
+```js
+{
+    "executables": [
+        { "name": "x", "links": ["a::a"] },
+        { "name": "y", "links": ["b::b", { "target": "c::c", "scope": "PRIVATE" }
+    ]
+}
+```
+
+```python
+def cupcake_add_executables():
+    metadata = json.parse('cupcake.json')
+    for executable in metadata.get('executables', []):
+        target = cupcake_add_executable(
+            executable['name'], PRIVATE if executable['private'] else None
+        )
+        for link in executable.get('links', []):
+            if type(link) == str:
+                target_link_libraries(target, PUBLIC, link)
+            else:
+                target_link_libraries(target, link.get('scope', PUBLIC), link['target'])
+```
 
 
-### [`cupcake_add_tests`](#toc)
+### `cupcake_add_tests`
+[:arrow_up:](#toc) :hash: [special](#interface)
+
+```cmake
+cupcake_add_tests()
+```
+
+Add targets for all tests in the project.
+
+For each object in the `.tests` array of `cupcake.json`,
+`cupcake_add_tests()` first calls
+[`cupcake_add_test()`](#cupcake_add_test)
+with the object's `.name` string property.
+Then it calls [`target_link_libraries()`][target_link_libraries]
+for each value in the object's `.links` array property.
+
+Each link takes one of two forms.
+If it is a string, then `cupcake_add_tests()` calls
+`target_link_libraries()` with it as the name of the linked target
+and `PUBLIC` as the scope.
+If it is an object, then `cupcake_add_tests()` calls
+`target_link_libraries()` with its `.target` string property
+as the name of the linked target and
+its optional `.scope` string property (default value `PUBLIC`) as the scope.
+
+```js
+{
+    "tests": [
+        { "name": "x", "links": ["a::a"] },
+        { "name": "y", "links": ["b::b", { "target": "c::c", "scope": "PRIVATE" }
+    ]
+}
+```
+
+```python
+def cupcake_add_tests():
+    metadata = json.parse('cupcake.json')
+    for test in metadata.get('tests', []):
+        target = cupcake_add_test(test['name'])
+        for link in test.get('links', []):
+            if type(link) == str:
+                target_link_libraries(target, PUBLIC, link)
+            else:
+                target_link_libraries(target, link.get('scope', PUBLIC), link['target'])
+```
 
 
 ## Examples
@@ -593,10 +827,15 @@ cupcake_add_tests()
         { "name": "example", "links": ["abc::abc"] }
     ],
     "executables": [
-        { "name": "example", "links": ["example.libexample"] }
+        { "name": "example", "links": [{ "target": "example.libexample", "scope": "PRIVATE" }] }
     ],
     "tests": [
-        { "name": "example", "links": ["xyz::xyz", "example.libexample"] }
+        {
+            "name": "example", "links": [
+                { "target": "xyz::xyz", "scope": "PRIVATE" },
+                { "target": "example.libexample", "scope": "PRIVATE" }
+            ]
+        }
     ]
 }
 ```
@@ -614,15 +853,17 @@ cupcake_add_tests()
 [find_dependency]: https://cmake.org/cmake/help/latest/module/CMakeFindDependencyMacro.html#command:find_dependency
 [include]: https://cmake.org/cmake/help/latest/command/include.html
 [project]: https://cmake.org/cmake/help/latest/command/project.html
-[target_link_libraries]: https://cmake.org/cmake/help/latest/command/target_link_libraries.html
+[target_link_libraries]: https://cmake.org/cmake/help/latest/command/target_link_libraries.html#libraries-for-a-target-and-or-its-dependents
 [CTest]: https://cmake.org/cmake/help/latest/module/CTest.html
 [pcf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-configuration-file
 [pvf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-version-file
+[CMakeDeps]: https://docs.conan.io/2/reference/tools/cmake/cmakedeps.html
+[scope]: https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#target-usage-requirements
 
 [Artifactory]: https://docs.conan.io/1/uploading_packages/using_artifactory.html
 [Redirectory]: https://conan.jfreeman.dev
-[cpp_info]: https://docs.conan.io/1/reference/conanfile/attributes.html#cpp-info
-[package_info]: https://docs.conan.io/1/reference/conanfile/methods.html#package-info
+[cpp_info]: https://docs.conan.io/2/reference/conanfile/methods/package_info.html#conan-conanfile-model-cppinfo
+[package_info]: https://docs.conan.io/2/reference/conanfile/methods/package_info.html
 [tool_requires]: https://docs.conan.io/1/devtools/build_requires.html
 [requires]: https://docs.conan.io/1/reference/conanfile/attributes.html#requires
 [cupcake.py]: https://github.com/thejohnfreeman/cupcake.py
@@ -671,3 +912,4 @@ cupcake_add_tests()
 [41]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_MINOR.html
 [42]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_PATCH.html
 [43]: https://stackoverflow.com/a/56448477/618906
+[44]: https://docs.conan.io/2/reference/tools/cmake/cmakedeps.html#cmakedeps-properties
