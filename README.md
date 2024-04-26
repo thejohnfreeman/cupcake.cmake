@@ -286,7 +286,7 @@ It affects the behavior of
 the generated [package configuration file][pcf] will transitively call
 [`find_dependency()`][find_dependency] for all non-private dependencies.
 
-Additional arguments are passed through to `find_package()`.
+Remaining arguments are passed through to `find_package()`.
 
 Returns a variable `<package-name>_TARGETS`
 containing a list of the targets imported by the command.
@@ -319,7 +319,7 @@ the `CMakeLists.txt` of the subdirectory.
 cupcake_add_library(<name>)
 ```
 
-Add a target for an exported library by calling [`add_library`][add_library].
+Add targets for an exported library by calling [`add_library`][add_library].
 
 The internal target is named `${PROJECT_NAME}.lib<name>`,
 and the external [`ALIAS` target][3] is named `${PROJECT_NAME}::lib<name>`.
@@ -335,11 +335,11 @@ to keep all of a target's configuration in one place.
 
 A library's public, exported headers must be either
 the single file `include/<name>.hpp` (or `.h`)
-or every file under the directory `include/<name>`.
-Private, unexported headers may be placed under `src/lib<name>`.
+or every file under the directory `include/<name>/`.
+Private, unexported headers may be placed under `src/lib<name>/`.
 If a library has sources, they should be either
 the single file `src/lib<name>.cpp`
-or every `.cpp` file under the directory `src/lib<name>`.
+or every `.cpp` file under the directory `src/lib<name>/`.
 If a library does not have sources, i.e. if it is a header-only library,
 then the target will be an [`INTERFACE` library][4].
 If a library does have sources, then the target will be a
@@ -372,17 +372,19 @@ Libraries must _not_ define their own public headers with these names.
 cupcake_add_executable(<name>)
 ```
 
-Add a target for an exported executable by calling
+Adds targets for an exported executable by calling
 [`add_executable()`][add_executable].
 
-The target will be named `${PROJECT_NAME}::<name>`,
-i.e. `<name>` scoped under the project name.
-The variable `this` is defined in the parent scope just as it is by
-[`cupcake_add_library()`](#cupcake_add_library) and for the same reason.
+Just like [`cupcake_add_library()`](#cupcake_add_library),
+`cupcake_add_executable()` adds an internal and external target,
+and returns variable `this`.
+The internal target is named `${PROJECT_NAME}.<name>`,
+and the external [`ALIAS` target][3] is named `${PROJECT_NAME}::<name>`.
 
 An executable must have sources, and they should be either
 the single file `src/<name>.cpp`
-or every `.cpp` file under the directory `src/<name>`.
+or every `.cpp` file under the directory `src/<name>/`.
+
 
 ### [`cupcake_enable_testing`](#toc)
 
@@ -390,7 +392,7 @@ or every `.cpp` file under the directory `src/<name>`.
 cupcake_enable_testing()
 ```
 
-Conditionally adds tests to the project.
+Conditionally add tests to the project.
 
 The command does nothing if the project is not top-level.
 Dependents generally want to run a dependency's tests only when the dependency
@@ -400,7 +402,7 @@ If the project is top-level, then the command imports the [CTest module][CTest].
 If [`BUILD_TESTING`][CTest] is `ON`, which it is by default,
 then the command calls [`add_subdirectory(tests)`][add_subdirectory].
 
-Individual tests should be added in the `CMakeLists.txt` of the `tests`
+Individual tests should be added in the `CMakeLists.txt` of the `tests/`
 subdirectory.
 Dependencies that only the tests require should be imported there too.
 
@@ -411,26 +413,25 @@ Dependencies that only the tests require should be imported there too.
 cupcake_add_test(<name>)
 ```
 
-Add a target for a test executable.
+Add a target for a test.
+A test is an executable that returns 0 if and only if it passes.
 
 This command should be called only from the `tests` subdirectory,
 where all tests should live.
-All relative paths mentioned here are relative to that directory.
+A test must have sources,
+and they should be either the single file `tests/<name>.cpp`
+or every `.cpp` file under the directory `tests/<name>/`.
 
 The target is given an unspecified name.
+Tests are not exported or installed.
+They are added to the list of tests run by [CTest][].
 The variable `this` is defined in the parent scope just as it is by
 [`cupcake_add_library()`](#cupcake_add_library) and for the same reason.
 
-A test executable must have sources, and they should be either
-the single file `<name>.cpp`
-or every `.cpp` file under the directory `<name>`.
-
-Test executables are not exported.
-They are added to the list of tests run by CTest.
-
 The target is excluded from the ["all" target][EXCLUDE_FROM_ALL].
 This way, resources are not spent building tests unless they are run.
-Tests are re-built if necessary when run.
+Each test is given a [fixture][43] that builds (or rebuilds)
+the test before it is run.
 
 
 ### [`cupcake_install_project`](#toc)
@@ -443,12 +444,11 @@ Install all exported targets.
 
 This command should be called only once,
 after all exported targets have been added.
+It should be called from the project's root `CMakeLists.txt`.
 
 After installation, dependents can import all exported targets,
-under the same scoped names,
-with [`cupcake_find_package()`](#cupcake_find_package)
-by passing the name of the project and
-a version string compatible under semantic versioning.
+by their external names,
+with [`cupcake_find_package()`](#cupcake_find_package).
 
 
 ### [`cupcake_install_cpp_info`](#toc)
@@ -473,32 +473,33 @@ def package_info(self):
 ```
 
 
-## Example
+### Example
+
+A project using only general commands could look like this:
 
 ```cmake
 # CMakeLists.txt
-cmake_minimum_required(VERSION 3.7)
-project(package_name LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.20)
+project(example LANGUAGES CXX)
 find_package(cupcake REQUIRED)
 cupcake_project()
-cupcake_find_package(dependency_name 1.0)
-cupcake_add_library(library_name)
-target_link_libraries(${this} PUBLIC dependency_name::target_name)
-cupcake_add_executable(executable_name)
-target_link_libraries(${this} PUBLIC package_name::library_name)
+cupcake_find_package(abc)
+cupcake_add_library(example)
+target_link_libraries(${this} PUBLIC abc::abc)
+cupcake_add_executable(example)
+target_link_libraries(${this} PRIVATE example.libexample)
 cupcake_enable_testing()
 cupcake_install_project()
+cupcake_install_cpp_info()
 ```
 
 ```cmake
 # tests/CMakeLists.txt
-cupcake_find_package(test_dependency_name 1.0)
-cupcake_add_test(test_name)
-target_link_libraries(${this}
-    test_dependency_name::target_name
-    package_name::library_name
-)
+cupcake_find_package(xyz)
+cupcake_add_test(example)
+target_link_libraries(${this} PRIVATE xyz::xyz example.libexample)
 ```
+
 
 [BUILD_SHARED_LIBS]: https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html
 [CMAKE_CURRENT_SOURCE_DIR]: https://cmake.org/cmake/help/latest/variable/CMAKE_CURRENT_SOURCE_DIR.html
@@ -567,3 +568,4 @@ target_link_libraries(${this}
 [40]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_MAJOR.html
 [41]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_MINOR.html
 [42]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_PATCH.html
+[43]: https://stackoverflow.com/a/56448477/618906
