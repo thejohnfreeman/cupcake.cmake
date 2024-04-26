@@ -7,17 +7,13 @@ include(GNUInstallDirs)
 # A target representing all executables declared with the function below.
 add_custom_target(executables)
 
-# add_executable(<name> [<source>...])
+# add_executable(<name> [PRIVATE] [<source>...])
 function(cupcake_add_executable name)
+  cmake_parse_arguments(arg "PRIVATE" "" "" ${ARGN})
+
   set(target ${PROJECT_NAME}.${name})
   set(this ${target} PARENT_SCOPE)
-  add_executable(${target} ${ARGN})
-  set(alias ${PROJECT_NAME}::${name})
-  add_executable(${alias} ALIAS ${target})
-
-  cupcake_set_project_property(
-    APPEND PROPERTY PROJECT_EXECUTABLES "${alias}"
-  )
+  add_executable(${target} ${arg_UNPARSED_ARGUMENTS})
 
   # if(PROJECT_IS_TOP_LEVEL)
   if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
@@ -41,11 +37,18 @@ function(cupcake_add_executable name)
     EXPORT_NAME ${name}
   )
 
-  install(
-    TARGETS ${target}
-    EXPORT ${PROJECT_EXPORT_SET}
-    RUNTIME
-      DESTINATION "${CMAKE_INSTALL_BINDIR}"
-      COMPONENT ${PROJECT_NAME}_runtime
-  )
+  if(NOT arg_PRIVATE)
+    set(alias ${PROJECT_NAME}::${name})
+    add_executable(${alias} ALIAS ${target})
+    cupcake_set_project_property(
+      APPEND PROPERTY PROJECT_EXECUTABLES "${alias}"
+    )
+    install(
+      TARGETS ${target}
+      EXPORT ${PROJECT_EXPORT_SET}
+      RUNTIME
+        DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT ${PROJECT_NAME}_runtime
+    )
+  endif()
 endfunction()

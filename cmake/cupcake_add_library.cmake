@@ -8,8 +8,10 @@ include(GNUInstallDirs)
 # A target representing all libraries declared with the function below.
 add_custom_target(libraries)
 
-# add_library(<name> [<source>...])
+# add_library(<name> [PRIVATE] [<source>...])
 function(cupcake_add_library name)
+  cmake_parse_arguments(arg "PRIVATE" "" "" ${ARGN})
+
   # We add a "lib" prefix to library targets
   # so that libraries and executables can share the same name.
   # They will be distinguished in the filesystem by their filename prefix
@@ -31,15 +33,9 @@ function(cupcake_add_library name)
     set(public INTERFACE)
   endif()
 
-  add_library(${target} ${type} ${ARGN})
-  set(alias ${PROJECT_NAME}::lib${name})
-  add_library(${alias} ALIAS ${target})
+  add_library(${target} ${type} ${arg_UNPARSED_ARGUMENTS})
   set_target_properties(${target} PROPERTIES
     EXPORT_NAME lib${name}
-  )
-
-  cupcake_set_project_property(
-    APPEND PROPERTY PROJECT_LIBRARIES "${alias}"
   )
 
   # if(PROJECT_IS_TOP_LEVEL)
@@ -108,37 +104,44 @@ function(cupcake_add_library name)
     )
   endif()
 
-  install(
-    TARGETS ${target}
-    EXPORT ${PROJECT_EXPORT_SET}
-    ARCHIVE
-      DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-      COMPONENT ${PROJECT_NAME}_development
-    LIBRARY
-      DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-      COMPONENT ${PROJECT_NAME}_runtime
-      NAMELINK_SKIP
-    RUNTIME
-      DESTINATION "${CMAKE_INSTALL_BINDIR}"
-      COMPONENT ${PROJECT_NAME}_runtime
-    INCLUDES
+  if(NOT arg_PRIVATE)
+    set(alias ${PROJECT_NAME}::lib${name})
+    add_library(${alias} ALIAS ${target})
+    cupcake_set_project_property(
+      APPEND PROPERTY PROJECT_LIBRARIES "${alias}"
+    )
+    install(
+      TARGETS ${target}
+      EXPORT ${PROJECT_EXPORT_SET}
+      ARCHIVE
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT ${PROJECT_NAME}_development
+      LIBRARY
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT ${PROJECT_NAME}_runtime
+        NAMELINK_SKIP
+      RUNTIME
+        DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT ${PROJECT_NAME}_runtime
+      INCLUDES
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+    # added in CMake 3.12: NAMELINK_COMPONENT
+    install(
+      TARGETS ${target}
+      LIBRARY
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT ${PROJECT_NAME}_development
+        NAMELINK_ONLY
+    )
+    # We must install the headers with install(DIRECTORY) because
+    # installing a target does not install its include directories.
+    install(
+      DIRECTORY
+        "${CMAKE_HEADER_OUTPUT_DIRECTORY}/${name}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
       DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-  )
-  # added in CMake 3.12: NAMELINK_COMPONENT
-  install(
-    TARGETS ${target}
-    LIBRARY
-      DESTINATION "${CMAKE_INSTALL_LIBDIR}"
       COMPONENT ${PROJECT_NAME}_development
-      NAMELINK_ONLY
-  )
-  # We must install the headers with install(DIRECTORY) because
-  # installing a target does not install its include directories.
-  install(
-    DIRECTORY
-      "${CMAKE_HEADER_OUTPUT_DIRECTORY}/${name}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    COMPONENT ${PROJECT_NAME}_development
-  )
+    )
+  endif()
 endfunction()
