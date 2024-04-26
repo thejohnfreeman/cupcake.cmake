@@ -5,27 +5,28 @@ include(cupcake_assert_special)
 include(cupcake_json)
 
 function(cupcake_add_libraries)
-  if(ARGC GREATER 0)
-    list(POP_FRONT ARGN section)
-  else()
-    set(section exports)
-  endif()
   cupcake_assert_special()
-  cupcake_json_get(libraries ARRAY "[]" "${PROJECT_JSON}" libraries)
+
+  # libraries = metadata.get('libraries', []):
   # libraries :: [{ name :: string, links? :: array }]
+  cupcake_json_get(libraries ARRAY "[]" "${PROJECT_JSON}" libraries)
+  # for library in libraries:
   string(JSON count LENGTH "${libraries}")
   if(count GREATER 0)
     math(EXPR stop "${count} - 1")
     foreach(i RANGE ${stop})
+      # library :: { name :: string, private? :: boolean, links :: array }
       string(JSON library GET "${libraries}" ${i})
-      cupcake_json_get(asection STRING exports "${library}" section)
-      if(NOT section STREQUAL asection)
-        continue()
-      endif()
 
-      string(JSON name GET "${library}" name)
       # If ${name} is a JSON string, it is unquoted here.
-      cupcake_add_library(${name} "${ARGN}")
+      string(JSON name GET "${library}" name)
+      cupcake_json_get(private BOOLEAN "false" "${library}" private)
+      if(private)
+        set(private PRIVATE)
+      else()
+        set(private)
+      endif()
+      cupcake_add_library(${name} ${private} "${ARGN}")
 
       cupcake_json_get(links ARRAY "[]" "${library}" links)
       # links :: [
