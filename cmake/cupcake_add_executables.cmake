@@ -5,27 +5,28 @@ include(cupcake_assert_special)
 include(cupcake_json)
 
 function(cupcake_add_executables)
-  if(ARGC GREATER 0)
-    list(POP_FRONT ARGN section)
-  else()
-    set(section exports)
-  endif()
   cupcake_assert_special()
-  cupcake_json_get(executables ARRAY "[]" "${PROJECT_JSON}" executables)
+
+  # executables = metadata.get('executables', []):
   # executables :: [{ name :: string, links? :: array }]
+  cupcake_json_get(executables ARRAY "[]" "${PROJECT_JSON}" executables)
+  # for executable in executables:
   string(JSON count LENGTH "${executables}")
   if(count GREATER 0)
     math(EXPR stop "${count} - 1")
     foreach(i RANGE ${stop})
+      # executable :: { name :: string, private? :: boolean, links :: array }
       string(JSON executable GET "${executables}" ${i})
-      cupcake_json_get(asection STRING exports "${executable}" section)
-      if(NOT section STREQUAL asection)
-        continue()
-      endif()
 
-      string(JSON name GET "${executable}" name)
       # If ${name} is a JSON string, it is unquoted here.
-      cupcake_add_executable(${name} "${ARGN}")
+      string(JSON name GET "${executable}" name)
+      cupcake_json_get(private BOOLEAN "false" "${executable}" private)
+      if(private)
+        set(private PRIVATE)
+      else()
+        set(private)
+      endif()
+      cupcake_add_executable(${name} ${private} "${ARGN}")
 
       cupcake_json_get(links ARRAY "[]" "${executable}" links)
       # links :: [

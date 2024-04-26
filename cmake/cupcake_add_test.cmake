@@ -20,6 +20,7 @@ function(cupcake_add_test name)
     return()
   endif()
 
+  # https://stackoverflow.com/a/56448477/618906
   add_test(NAME ${target} COMMAND ${target})
   set_tests_properties(
     ${target} PROPERTIES
@@ -38,4 +39,3 @@ function(cupcake_add_test name)
     FIXTURES_SETUP ${target}_fixture
   )
 endfunction()
-

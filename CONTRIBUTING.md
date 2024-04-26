@@ -4,7 +4,7 @@ The version string in `CMakeLists.txt` is `0.0.0`
 only because `alpha` is not [allowed][2].
 
 The `develop` branch is a submodule of [project-template-cpp][]
-at path `/cupcake/`.
+at path `/cupcake.cmake/`.
 That repository contains the tests for Cupcake.
 See their [instructions][1].
 
@@ -17,14 +17,15 @@ This way, the version strings in the `develop` branch are never changed.
 ```
 git checkout master
 git pull --no-ff origin develop
+before=$(conan inspect . | awk '/version/ { print $2 }')
 version=...
-sed -i "s/x.y.z/${version}/" conanfile.py README.md CMakeLists.txt
+sed -i "s/${before}/${version}/" conanfile.py README.md CMakeLists.txt
 git commit --all --message "Bump version to ${version}"
 git tag $version
 git push
 git push --tag
 conan export .
-conan upload --remote github cupcake/${version}@github/thejohnfreeman
+conan upload --remote github cupcake.cmake/${version}@github/thejohnfreeman
 ```
 
 

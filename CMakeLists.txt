@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(cupcake VERSION 0.7.0 LANGUAGES NONE)
+project(cupcake.cmake VERSION 0.7.0 LANGUAGES NONE)
 
 include(CMakePackageConfigHelpers)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -19,7 +19,7 @@ install(
 )
 
 configure_package_config_file(
-  cupcake-config.cmake.in
+  config.cmake.in
   "${PROJECT_EXPORT_DIR}/${PROJECT_NAME}-config.cmake"
   INSTALL_DESTINATION "${CMAKE_INSTALL_EXPORTDIR}/${PROJECT_NAME}"
   NO_SET_AND_CHECK_MACRO

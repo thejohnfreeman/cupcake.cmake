@@ -8,8 +8,10 @@ include(GNUInstallDirs)
 # A target representing all libraries declared with the function below.
 add_custom_target(libraries)
 
-# add_library(<name> [<source>...])
+# add_library(<name> [PRIVATE] [<source>...])
 function(cupcake_add_library name)
+  cmake_parse_arguments(arg "PRIVATE" "" "" ${ARGN})
+
   # We add a "lib" prefix to library targets
   # so that libraries and executables can share the same name.
   # They will be distinguished in the filesystem by their filename prefix
@@ -31,15 +33,9 @@ function(cupcake_add_library name)
     set(public INTERFACE)
   endif()
 
-  add_library(${target} ${type} ${ARGN})
-  set(alias ${PROJECT_NAME}::lib${name})
-  add_library(${alias} ALIAS ${target})
+  add_library(${target} ${type} ${arg_UNPARSED_ARGUMENTS})
   set_target_properties(${target} PROPERTIES
     EXPORT_NAME lib${name}
-  )
-
-  cupcake_set_project_property(
-    APPEND PROPERTY PROJECT_LIBRARIES "${alias}"
   )
 
   # if(PROJECT_IS_TOP_LEVEL)
@@ -48,10 +44,30 @@ function(cupcake_add_library name)
   endif()
 
   cupcake_generate_version_header(${name})
-  # Each library has one public header directory under include/.
+
+  # Each library has one public header directory under `include/`.
+  # We want to isolate them from each other,
+  # meaning that they cannot inadvertently include each other
+  # without declaring an explicit link
+  # just because their includes are relative to the same `include/` directory.
+  # To implement isolation at build time,
+  # we create a _new_ include directory under the build directory
+  # that contains only symbolic links to the library's own public headers.
+  set(dir "${CMAKE_CURRENT_BINARY_DIR}/include/${target}")
+  file(MAKE_DIRECTORY "${dir}")
+  foreach(lname "${name}" "${name}.h" "${name}.hpp")
+    file(CREATE_LINK
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
+      "${dir}/${name}"
+      SYMBOLIC
+    )
+  endforeach()
+
   target_include_directories(${target} ${public}
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<BUILD_INTERFACE:${CMAKE_INCLUDE_OUTPUT_DIRECTORY}>"
+    "$<BUILD_INTERFACE:${dir}>"
+    "$<BUILD_INTERFACE:${CMAKE_HEADER_OUTPUT_DIRECTORY}>"
+    # TODO: Verify that the `INSTALL_INTERFACE` is implemented by
+    # `install(TARGETS ... INCLUDES DESTINATION ...)` below.
   )
 
   get_target_property(type ${target} TYPE)
@@ -73,7 +89,7 @@ function(cupcake_add_library name)
     # must pass the `EXPORT_FILE_NAME` option.
     generate_export_header(${target}
       BASE_NAME ${name}
-      EXPORT_FILE_NAME "${CMAKE_INCLUDE_OUTPUT_DIRECTORY}/${name}/export.hpp"
+      EXPORT_FILE_NAME "${CMAKE_HEADER_OUTPUT_DIRECTORY}/${name}/export.hpp"
     )
     if(NOT type STREQUAL SHARED_LIBRARY)
       # Disable the export definitions.
@@ -88,37 +104,44 @@ function(cupcake_add_library name)
     )
   endif()
 
-  install(
-    TARGETS ${target}
-    EXPORT ${PROJECT_EXPORT_SET}
-    ARCHIVE
-      DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-      COMPONENT ${PROJECT_NAME}_development
-    LIBRARY
-      DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-      COMPONENT ${PROJECT_NAME}_runtime
-      NAMELINK_SKIP
-    RUNTIME
-      DESTINATION "${CMAKE_INSTALL_BINDIR}"
-      COMPONENT ${PROJECT_NAME}_runtime
-    INCLUDES
+  if(NOT arg_PRIVATE)
+    set(alias ${PROJECT_NAME}::lib${name})
+    add_library(${alias} ALIAS ${target})
+    cupcake_set_project_property(
+      APPEND PROPERTY PROJECT_LIBRARIES "${alias}"
+    )
+    install(
+      TARGETS ${target}
+      EXPORT ${PROJECT_EXPORT_SET}
+      ARCHIVE
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT ${PROJECT_NAME}_development
+      LIBRARY
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT ${PROJECT_NAME}_runtime
+        NAMELINK_SKIP
+      RUNTIME
+        DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT ${PROJECT_NAME}_runtime
+      INCLUDES
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+    # added in CMake 3.12: NAMELINK_COMPONENT
+    install(
+      TARGETS ${target}
+      LIBRARY
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT ${PROJECT_NAME}_development
+        NAMELINK_ONLY
+    )
+    # We must install the headers with install(DIRECTORY) because
+    # installing a target does not install its include directories.
+    install(
+      DIRECTORY
+        "${CMAKE_HEADER_OUTPUT_DIRECTORY}/${name}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
       DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-  )
-  # added in CMake 3.12: NAMELINK_COMPONENT
-  install(
-    TARGETS ${target}
-    LIBRARY
-      DESTINATION "${CMAKE_INSTALL_LIBDIR}"
       COMPONENT ${PROJECT_NAME}_development
-      NAMELINK_ONLY
-  )
-  # We must install the headers with install(DIRECTORY) because
-  # installing a target does not install its include directories.
-  install(
-    DIRECTORY
-      "${CMAKE_INCLUDE_OUTPUT_DIRECTORY}/${name}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    COMPONENT ${PROJECT_NAME}_development
-  )
+    )
+  endif()
 endfunction()
