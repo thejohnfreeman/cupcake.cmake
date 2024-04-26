@@ -4,7 +4,7 @@ The version string in `CMakeLists.txt` is `0.0.0`
 only because `alpha` is not [allowed][2].
 
 The `develop` branch is a submodule of [project-template-cpp][]
-at path `/cupcake/`.
+at path `/cupcake.cmake/`.
 That repository contains the tests for Cupcake.
 See their [instructions][1].
 
@@ -25,7 +25,7 @@ git tag $version
 git push
 git push --tag
 conan export .
-conan upload --remote github cupcake/${version}@github/thejohnfreeman
+conan upload --remote github cupcake.cmake/${version}@github/thejohnfreeman
 ```
 
 
