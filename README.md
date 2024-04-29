@@ -158,7 +158,7 @@ cupcake_add_tests()
 ```
 
 ```js
-# cupcake.json
+// cupcake.json
 {
     "project": {
         "name": "example"
