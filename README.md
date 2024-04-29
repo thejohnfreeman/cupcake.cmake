@@ -106,6 +106,85 @@ and Pythonic pseudocode.
 - [`cupcake_add_tests`](#cupcake_add_tests)
 
 
+### Examples
+
+A project using only general commands might look like this:
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20)
+project(example LANGUAGES CXX)
+find_package(cupcake REQUIRED)
+cupcake_project()
+cupcake_find_package(abc)
+cupcake_add_library(example)
+target_link_libraries(${this} PUBLIC abc::abc)
+cupcake_add_executable(example)
+target_link_libraries(${this} PUBLIC example.libexample)
+cupcake_enable_testing()
+cupcake_install_project()
+cupcake_install_cpp_info()
+```
+
+```cmake
+# tests/CMakeLists.txt
+cupcake_find_package(xyz PRIVATE)
+cupcake_add_test(example)
+target_link_libraries(${this} PUBLIC xyz::xyz example.libexample)
+```
+
+A project using special commands might look like this:
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.20)
+project(example LANGUAGES CXX)
+find_package(cupcake REQUIRED)
+cupcake_project()
+cupcake_find_packages(main)
+cupcake_link_libraries(example.imports.main INTERFACE main)
+cupcake_add_libraries()
+cupcake_add_executables()
+cupcake_enable_testing()
+cupcake_install_project()
+cupcake_install_cpp_info()
+```
+
+```cmake
+# tests/CMakeLists.txt
+cupcake_find_packages(test PRIVATE)
+cupcake_link_libraries(example.imports.test INTERFACE test)
+cupcake_add_tests()
+```
+
+```js
+# cupcake.json
+{
+    "project": {
+        "name": "example"
+    },
+    "imports": [
+        { "name": "abc", "file": "abc", "targets": ["abc::abc"] },
+        { "name": "xyz", "file": "xyz", "targets": ["xyz::xyz"], "groups": ["test"] }
+    ],
+    "libraries": [
+        { "name": "example", "links": ["abc::abc"] }
+    ],
+    "executables": [
+        { "name": "example", "links": [{ "target": "example.libexample", "scope": "PUBLIC" }] }
+    ],
+    "tests": [
+        {
+            "name": "example", "links": [
+                "xyz::xyz",
+                { "target": "example.libexample", "scope": "PUBLIC" }
+            ]
+        }
+    ]
+}
+```
+
+
 ### `cupcake_project`
 [:arrow_up:](#toc) :hash: [general](#interface)
 
@@ -758,86 +837,6 @@ def cupcake_add_tests():
                 target_link_libraries(target, PUBLIC, link)
             else:
                 target_link_libraries(target, link.get('scope', PUBLIC), link['target'])
-```
-
-
-## Examples
-
-A project using only general commands could look like this:
-
-```cmake
-# CMakeLists.txt
-cmake_minimum_required(VERSION 3.20)
-project(example LANGUAGES CXX)
-find_package(cupcake REQUIRED)
-cupcake_project()
-cupcake_find_package(abc)
-cupcake_add_library(example)
-target_link_libraries(${this} PUBLIC abc::abc)
-cupcake_add_executable(example)
-target_link_libraries(${this} PRIVATE example.libexample)
-cupcake_enable_testing()
-cupcake_install_project()
-cupcake_install_cpp_info()
-```
-
-```cmake
-# tests/CMakeLists.txt
-cupcake_find_package(xyz)
-cupcake_add_test(example)
-target_link_libraries(${this} PRIVATE xyz::xyz example.libexample)
-```
-
-
-A project using special commands could look like this:
-
-```cmake
-# CMakeLists.txt
-cmake_minimum_required(VERSION 3.20)
-project(example LANGUAGES CXX)
-find_package(cupcake REQUIRED)
-cupcake_project()
-cupcake_find_packages(main)
-cupcake_link_libraries(example.imports.main INTERFACE main)
-cupcake_add_libraries()
-cupcake_add_executables()
-cupcake_enable_testing()
-cupcake_install_project()
-cupcake_install_cpp_info()
-```
-
-```cmake
-# tests/CMakeLists.txt
-cupcake_find_packages(test PRIVATE)
-cupcake_link_libraries(example.imports.test INTERFACE test)
-cupcake_add_tests()
-```
-
-```js
-# cupcake.json
-{
-    "project": {
-        "name": "example"
-    },
-    "imports": [
-        { "name": "abc", "file": "abc", "targets": ["abc::abc"] },
-        { "name": "xyz", "file": "xyz", "targets": ["xyz::xyz"], "groups": ["test"] }
-    ],
-    "libraries": [
-        { "name": "example", "links": ["abc::abc"] }
-    ],
-    "executables": [
-        { "name": "example", "links": [{ "target": "example.libexample", "scope": "PRIVATE" }] }
-    ],
-    "tests": [
-        {
-            "name": "example", "links": [
-                { "target": "xyz::xyz", "scope": "PRIVATE" },
-                { "target": "example.libexample", "scope": "PRIVATE" }
-            ]
-        }
-    ]
-}
 ```
 
 
