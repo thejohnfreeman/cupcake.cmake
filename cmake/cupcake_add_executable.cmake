@@ -37,6 +37,24 @@ function(cupcake_add_executable name)
     EXPORT_NAME ${name}
   )
 
+  # If we call `copy`, but the "from" file list is empty, it will error.
+  # Cannot simply condition on `WIN32`, or `BUILD_SHARED_LIBS`.
+  # Must condition on whether the DLL list is empty.
+  # https://discourse.cmake.org/t/generator-expression-with-potentially-empty-list/6254/2
+  # We _chould_ make the command for the custom target change the `PATH`
+  # environment variable, but then the builder will not be able to just
+  # directly call the executable from the output directory.
+  set(has_runtime_dlls $<BOOL:$<TARGET_RUNTIME_DLLS:${target}>>)
+  set(copy_runtime_dlls
+    ${CMAKE_COMMAND} -E copy
+    $<TARGET_RUNTIME_DLLS:${target}>
+    $<TARGET_FILE_DIR:${target}>
+  )
+  add_custom_command(TARGET ${target} POST_BUILD
+    COMMAND "$<${has_runtime_dlls}:${copy_runtime_dlls}>"
+    COMMAND_EXPAND_LISTS
+  )
+
   if(NOT arg_PRIVATE)
     set(alias ${PROJECT_NAME}::${name})
     add_executable(${alias} ALIAS ${target})
