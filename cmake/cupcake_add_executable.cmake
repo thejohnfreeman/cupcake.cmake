@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
 include(cupcake_find_sources)
+include(cupcake_module_dir)
 include(cupcake_project_properties)
 include(GNUInstallDirs)
 
@@ -18,9 +19,20 @@ function(cupcake_add_executable name)
   # if(PROJECT_IS_TOP_LEVEL)
   if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
     add_dependencies(executables ${target})
-    add_custom_target(execute.${name} ${target} \${CUPCAKE_EXE_ARGUMENTS})
+    # We must pass arguments through the environment
+    # because `cmake --build` will not forward any.
+    # We must read arguments in a CMake script
+    # because the generator command has no cross-platform method
+    # to read the environment.
+    add_custom_target(
+      execute.${name}
+      COMMAND "${CMAKE_COMMAND}"
+      "-Dcmd=$<TARGET_FILE:${target}>"
+      -P "${CUPCAKE_MODULE_DIR}/data/call.cmake"
+    )
     if(name STREQUAL CMAKE_PROJECT_NAME)
-      add_custom_target(execute ${target} \${CUPCAKE_EXE_ARGUMENTS})
+      add_custom_target(execute)
+      add_dependencies(execute execute.${name})
     endif()
   endif()
 
