@@ -106,6 +106,85 @@ and Pythonic pseudocode.
 - [`cupcake_add_tests`](#cupcake_add_tests)
 
 
+### Examples
+
+A project using only general commands might look like this:
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.21)
+project(example LANGUAGES CXX)
+find_package(cupcake REQUIRED)
+cupcake_project()
+cupcake_find_package(abc)
+cupcake_add_library(example)
+target_link_libraries(${this} PUBLIC abc::abc)
+cupcake_add_executable(example)
+target_link_libraries(${this} PUBLIC example.libexample)
+cupcake_enable_testing()
+cupcake_install_project()
+cupcake_install_cpp_info()
+```
+
+```cmake
+# tests/CMakeLists.txt
+cupcake_find_package(xyz PRIVATE)
+cupcake_add_test(example)
+target_link_libraries(${this} PUBLIC xyz::xyz example.libexample)
+```
+
+A project using special commands might look like this:
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.21)
+project(example LANGUAGES CXX)
+find_package(cupcake REQUIRED)
+cupcake_project()
+cupcake_find_packages(main)
+cupcake_link_libraries(example.imports.main INTERFACE main)
+cupcake_add_libraries()
+cupcake_add_executables()
+cupcake_enable_testing()
+cupcake_install_project()
+cupcake_install_cpp_info()
+```
+
+```cmake
+# tests/CMakeLists.txt
+cupcake_find_packages(test PRIVATE)
+cupcake_link_libraries(example.imports.test INTERFACE test)
+cupcake_add_tests()
+```
+
+```js
+// cupcake.json
+{
+    "project": {
+        "name": "example"
+    },
+    "imports": [
+        { "name": "abc", "file": "abc", "targets": ["abc::abc"] },
+        { "name": "xyz", "file": "xyz", "targets": ["xyz::xyz"], "groups": ["test"] }
+    ],
+    "libraries": [
+        { "name": "example", "links": ["abc::abc"] }
+    ],
+    "executables": [
+        { "name": "example", "links": [{ "target": "example.libexample", "scope": "PUBLIC" }] }
+    ],
+    "tests": [
+        {
+            "name": "example", "links": [
+                "xyz::xyz",
+                { "target": "example.libexample", "scope": "PUBLIC" }
+            ]
+        }
+    ]
+}
+```
+
+
 ### `cupcake_project`
 [:arrow_up:](#toc) :hash: [general](#interface)
 
@@ -424,6 +503,36 @@ to keep all of a target's configuration in one place.
 An executable must have sources, and they should be either
 the single file `src/<name>.cpp`
 or every `.cpp` file under the directory `src/<name>/`.
+
+If the project is the root project,
+then `cupcake_add_executable()`
+adds one more internal target named `execute.<name>`.
+It is a [custom][45] target that executes the executable.
+You can invoke it yourself with the following command
+instead of digging around in the output directory to find the executable.
+
+```
+cmake --build <build-dir> --target execute.<name>
+```
+
+Additionally, the target passes any
+[CMake list][46] of command-line arguments
+found in the environment variable `CUPCAKE_EXE_ARGUMENTS`.[^3]
+In other words,
+if you want to pass any command-line arguments through the target,
+then you must set environment variable `CUPCAKE_EXE_ARGUMENTS`
+to a semicolon-separated (`;`) list of string arguments,
+where each argument internally escapes any semicolons (with `\;`).
+If you are using [cupcake.py][], then it will set `CUPCAKE_EXE_ARGUMENTS`
+to forward any trailing arguments you pass to `cupcake exe <name>`.
+
+[^3]: An environment variable must be used
+because `cmake --build` does not forward any command-line arguments.
+
+If the project is the root project
+and the executable name matches the project name,
+then `cupcake_add_executable()` adds one more internal target named `execute`
+that depends on `execute.<name>`.
 
 
 ### `cupcake_enable_testing`
@@ -761,86 +870,6 @@ def cupcake_add_tests():
 ```
 
 
-## Examples
-
-A project using only general commands could look like this:
-
-```cmake
-# CMakeLists.txt
-cmake_minimum_required(VERSION 3.20)
-project(example LANGUAGES CXX)
-find_package(cupcake REQUIRED)
-cupcake_project()
-cupcake_find_package(abc)
-cupcake_add_library(example)
-target_link_libraries(${this} PUBLIC abc::abc)
-cupcake_add_executable(example)
-target_link_libraries(${this} PRIVATE example.libexample)
-cupcake_enable_testing()
-cupcake_install_project()
-cupcake_install_cpp_info()
-```
-
-```cmake
-# tests/CMakeLists.txt
-cupcake_find_package(xyz)
-cupcake_add_test(example)
-target_link_libraries(${this} PRIVATE xyz::xyz example.libexample)
-```
-
-
-A project using special commands could look like this:
-
-```cmake
-# CMakeLists.txt
-cmake_minimum_required(VERSION 3.20)
-project(example LANGUAGES CXX)
-find_package(cupcake REQUIRED)
-cupcake_project()
-cupcake_find_packages(main)
-cupcake_link_libraries(example.imports.main INTERFACE main)
-cupcake_add_libraries()
-cupcake_add_executables()
-cupcake_enable_testing()
-cupcake_install_project()
-cupcake_install_cpp_info()
-```
-
-```cmake
-# tests/CMakeLists.txt
-cupcake_find_packages(test PRIVATE)
-cupcake_link_libraries(example.imports.test INTERFACE test)
-cupcake_add_tests()
-```
-
-```js
-# cupcake.json
-{
-    "project": {
-        "name": "example"
-    },
-    "imports": [
-        { "name": "abc", "file": "abc", "targets": ["abc::abc"] },
-        { "name": "xyz", "file": "xyz", "targets": ["xyz::xyz"], "groups": ["test"] }
-    ],
-    "libraries": [
-        { "name": "example", "links": ["abc::abc"] }
-    ],
-    "executables": [
-        { "name": "example", "links": [{ "target": "example.libexample", "scope": "PRIVATE" }] }
-    ],
-    "tests": [
-        {
-            "name": "example", "links": [
-                { "target": "xyz::xyz", "scope": "PRIVATE" },
-                { "target": "example.libexample", "scope": "PRIVATE" }
-            ]
-        }
-    ]
-}
-```
-
-
 [BUILD_SHARED_LIBS]: https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html
 [CMAKE_CURRENT_SOURCE_DIR]: https://cmake.org/cmake/help/latest/variable/CMAKE_CURRENT_SOURCE_DIR.html
 [CMAKE_PREFIX_PATH]: https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html
@@ -913,3 +942,5 @@ cupcake_add_tests()
 [42]: https://cmake.org/cmake/help/latest/variable/PROJECT_VERSION_PATCH.html
 [43]: https://stackoverflow.com/a/56448477/618906
 [44]: https://docs.conan.io/2/reference/tools/cmake/cmakedeps.html#cmakedeps-properties
+[45]: https://cmake.org/cmake/help/latest/command/add_custom_target.html
+[46]: https://cmake.org/cmake/help/latest/command/list.html#introduction
