@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
 include(cupcake_find_sources)
+include(cupcake_isolate_headers)
 include(cupcake_module_dir)
 include(cupcake_project_properties)
 include(GNUInstallDirs)
@@ -16,8 +17,9 @@ function(cupcake_add_executable name)
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} ${arg_UNPARSED_ARGUMENTS})
 
-  # if(PROJECT_IS_TOP_LEVEL)
-  if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  add_dependencies(${PROJECT_NAME}.executables ${target})
+
+  if(PROJECT_IS_TOP_LEVEL)
     add_dependencies(executables ${target})
     # We must pass arguments through the environment
     # because `cmake --build` will not forward any.
@@ -37,8 +39,10 @@ function(cupcake_add_executable name)
   endif()
 
   # Let the executable include "private" headers if it wants.
-  target_include_directories(${target}
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/${name}"
+  cupcake_isolate_headers(
+    ${target} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/${name}"
   )
 
   cupcake_find_sources(sources ${name} src)

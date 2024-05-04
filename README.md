@@ -221,6 +221,23 @@ and automatically link to new requirements as they are added.
 Projects can use the special command `cupcake_link_libraries()`
 to link all the "main" required libraries listed in `cupcake.json`.
 
+`cupcake_project()` adds three more special targets:
+
+- `${PROJECT_NAME}.libraries`: An `INTERFACE` library target.
+- `${PROJECT_NAME}.executables`: A custom target.
+- `${PROJECT_NAME}.tests`: A custom target.
+
+All three are [excluded][EXCLUDE_FROM_ALL] from the "all" target.
+They each depend on all of the [libraries](#cupcake_add_library),
+[executables](#cupcake_add_executable), or [tests](#cupcake_add_test),
+respectively, added (by a `cupcake_add_<target>()` command)
+in the project directly , i.e. not in a subproject.
+Further, if the project is the root project,
+equivalent targets are available under the unqualified names
+`libraries`, `executables`, and `tests`, respectively.
+These targets are intended to be automatic groups
+with names that can be easily passed to `cmake --build`.
+
 `cupcake_project()` changes these default behaviors:
 
 |  #  | Variable | Value
@@ -450,6 +467,18 @@ If a library does have sources, then the target will be a
 [`STATIC` or `SHARED` library][5] depending on the value of variable
 [`BUILD_SHARED_LIBS`][BUILD_SHARED_LIBS].
 
+A library may include
+its own public headers by their paths relative to `include/`,
+and its own private headers by their paths relative to the project's
+root directory (i.e. starting with `src/lib<name>/`),
+but it may not include other headers in the project,
+even relative to those same directories,
+unless it links to a library exporting those headers.
+In fact, it _cannot_ include unlinked headers
+because `cupcake_add_library()` creates temporary symbolic links
+in the build directory pointing to the permitted headers,
+and only those will be found by the compiler.
+
 Each library is given two generated headers.
 These headers are installed with the library (if it is installed).
 Libraries must _not_ define their own public headers with these names.
@@ -503,6 +532,17 @@ to keep all of a target's configuration in one place.
 An executable must have sources, and they should be either
 the single file `src/<name>.cpp`
 or every `.cpp` file under the directory `src/<name>/`.
+
+An executable may include
+its own private headers by their paths relative to the project's
+root directory (i.e. starting with `src/<name>/`),
+but it may not include other headers in the project,
+even relative to the same directory,
+unless it links to a library exporting those headers.
+In fact, it _cannot_ include unlinked headers
+because `cupcake_add_library()` creates temporary symbolic links
+in the build directory pointing to the permitted headers,
+and only those will be found by the compiler.
 
 If the project is the root project,
 then `cupcake_add_executable()`
@@ -579,13 +619,24 @@ A test must have sources,
 and they should be either the single file `tests/<name>.cpp`
 or every `.cpp` file under the directory `tests/<name>/`.
 
+A test may include
+its own private headers by their paths relative to the project's
+root directory (i.e. starting with `tests/<name>/`),
+but it may not include other headers in the project,
+even relative to the same directory,
+unless it links to a library exporting those headers.
+In fact, it _cannot_ include unlinked headers
+because `cupcake_add_library()` creates temporary symbolic links
+in the build directory pointing to the permitted headers,
+and only those will be found by the compiler.
+
 The target is given an unspecified name.
 Tests are not exported, meaning they are not installed.
 They are added to the list of tests run by [CTest][].
 The variable `this` is defined in the parent scope just as it is by
 [`cupcake_add_library()`](#cupcake_add_library) and for the same reason.
 
-The target is excluded from the ["all" target][EXCLUDE_FROM_ALL].
+The target is [excluded][EXCLUDE_FROM_ALL] from the "all" target.
 This way, resources are not spent building tests unless they are run.
 Each test is given a [fixture][43] that builds (or rebuilds)
 the test before it is run.
@@ -600,13 +651,23 @@ cupcake_install_project()
 
 Add rules to install all exported targets.
 
-This command should be called only once,
+`cupcake_install_project()` installs a [package configuration file][pcf] that
+calls [`find_dependency()`][find_dependency]
+for all non-`PRIVATE` packages imported with
+[`cupcake_find_package()`](#cupcake_find_package), and
+exports all non-`PRIVATE` [libraries](#cupcake_add_library) and
+[executables](#cupcake_add_executable) added
+(by `cupcake_add_<target>()` commands) in the project directly,
+i.e. not in a subproject.
+These targets are exported with their external names,
+i.e. qualified by the project namespace,
+e.g. `${PROJECT_NAME}::lib<name>`.
+
+`cupcake_install_project()` installs a [package version file][pvf] too.
+
+`cupcake_install_project()` should be called only once,
 after all exported targets have been added.
 It should be called from the project's root `CMakeLists.txt`.
-
-After installation, dependents can import all exported targets,
-by their external names,
-with [`cupcake_find_package()`](#cupcake_find_package).
 
 
 ### `cupcake_install_cpp_info`

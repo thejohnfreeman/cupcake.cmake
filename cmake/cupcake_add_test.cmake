@@ -9,11 +9,19 @@ function(cupcake_add_test name)
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} EXCLUDE_FROM_ALL ${ARGN})
 
+  # Let the test include "private" headers if it wants.
+  cupcake_isolate_headers(
+    ${target} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/${name}"
+  )
+
   cupcake_find_sources(sources ${name})
   target_sources(${target} PRIVATE ${sources})
 
-  # if(PROJECT_IS_TOP_LEVEL)
-  if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  add_dependencies(${PROJECT_NAME}.tests ${target})
+
+  if(PROJECT_IS_TOP_LEVEL)
     add_dependencies(tests ${target})
   else()
     # Do not include tests of dependencies added as subdirectories.

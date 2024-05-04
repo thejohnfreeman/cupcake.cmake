@@ -9,8 +9,7 @@ macro(cupcake_project)
   set(PROJECT_EXPORT_DIR "${CMAKE_BINARY_DIR}/export/${PROJECT_NAME}")
   set(CMAKE_INSTALL_EXPORTDIR share)
 
-  #if(PROJECT_IS_TOP_LEVEL)
-  if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_PROJECT_EXPORT_SET ${PROJECT_EXPORT_SET})
   endif()
 
@@ -104,6 +103,10 @@ macro(cupcake_project)
   add_library(${target} INTERFACE)
   install(TARGETS ${target} EXPORT ${PROJECT_EXPORT_SET})
   add_library(${PROJECT_NAME}::imports::main ALIAS ${target})
+
+  add_library(${PROJECT_NAME}.libraries INTERFACE EXCLUDE_FROM_ALL)
+  add_custom_target(${PROJECT_NAME}.executables)
+  add_custom_target(${PROJECT_NAME}.tests)
 
   # This command should be called when
   # `CMAKE_CURRENT_SOURCE_DIR == PROJECT_SOURCE_DIR`,
