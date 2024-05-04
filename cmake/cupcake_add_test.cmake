@@ -9,6 +9,13 @@ function(cupcake_add_test name)
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} EXCLUDE_FROM_ALL ${ARGN})
 
+  # Let the test include "private" headers if it wants.
+  cupcake_isolate_headers(
+    ${target} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/${name}"
+  )
+
   cupcake_find_sources(sources ${name})
   target_sources(${target} PRIVATE ${sources})
 

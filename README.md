@@ -467,6 +467,18 @@ If a library does have sources, then the target will be a
 [`STATIC` or `SHARED` library][5] depending on the value of variable
 [`BUILD_SHARED_LIBS`][BUILD_SHARED_LIBS].
 
+A library may include
+its own public headers by their paths relative to `include/`,
+and its own private headers by their paths relative to the project's
+root directory (i.e. starting with `src/lib<name>/`),
+but it may not include other headers in the project,
+even relative to those same directories,
+unless it links to a library exporting those headers.
+In fact, it _cannot_ include unlinked headers
+because `cupcake_add_library()` creates temporary symbolic links
+in the build directory pointing to the permitted headers,
+and only those will be found by the compiler.
+
 Each library is given two generated headers.
 These headers are installed with the library (if it is installed).
 Libraries must _not_ define their own public headers with these names.
@@ -520,6 +532,17 @@ to keep all of a target's configuration in one place.
 An executable must have sources, and they should be either
 the single file `src/<name>.cpp`
 or every `.cpp` file under the directory `src/<name>/`.
+
+An executable may include
+its own private headers by their paths relative to the project's
+root directory (i.e. starting with `src/<name>/`),
+but it may not include other headers in the project,
+even relative to the same directory,
+unless it links to a library exporting those headers.
+In fact, it _cannot_ include unlinked headers
+because `cupcake_add_library()` creates temporary symbolic links
+in the build directory pointing to the permitted headers,
+and only those will be found by the compiler.
 
 If the project is the root project,
 then `cupcake_add_executable()`
@@ -595,6 +618,17 @@ where all tests should live.
 A test must have sources,
 and they should be either the single file `tests/<name>.cpp`
 or every `.cpp` file under the directory `tests/<name>/`.
+
+A test may include
+its own private headers by their paths relative to the project's
+root directory (i.e. starting with `tests/<name>/`),
+but it may not include other headers in the project,
+even relative to the same directory,
+unless it links to a library exporting those headers.
+In fact, it _cannot_ include unlinked headers
+because `cupcake_add_library()` creates temporary symbolic links
+in the build directory pointing to the permitted headers,
+and only those will be found by the compiler.
 
 The target is given an unspecified name.
 Tests are not exported, meaning they are not installed.

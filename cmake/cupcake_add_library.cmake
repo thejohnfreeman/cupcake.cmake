@@ -2,6 +2,7 @@ include_guard(GLOBAL)
 
 include(cupcake_find_sources)
 include(cupcake_generate_version_header)
+include(cupcake_isolate_headers)
 include(cupcake_project_properties)
 include(GNUInstallDirs)
 
@@ -54,18 +55,22 @@ function(cupcake_add_library name)
   # To implement isolation at build time,
   # we create a _new_ include directory under the build directory
   # that contains only symbolic links to the library's own public headers.
-  set(dir "${CMAKE_CURRENT_BINARY_DIR}/include/${target}")
-  file(MAKE_DIRECTORY "${dir}")
-  foreach(lname "${name}" "${name}.h" "${name}.hpp")
-    file(CREATE_LINK
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
-      "${dir}/${name}"
-      SYMBOLIC
+  cupcake_isolate_headers(
+    ${target} ${public}
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}.hpp"
+  )
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}")
+    cupcake_isolate_headers(
+      ${target} PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}"
     )
-  endforeach()
+  endif()
 
   target_include_directories(${target} ${public}
-    "$<BUILD_INTERFACE:${dir}>"
     "$<BUILD_INTERFACE:${CMAKE_HEADER_OUTPUT_DIRECTORY}>"
     # TODO: Verify that the `INSTALL_INTERFACE` is implemented by
     # `install(TARGETS ... INCLUDES DESTINATION ...)` below.
