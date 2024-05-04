@@ -105,6 +105,10 @@ macro(cupcake_project)
   install(TARGETS ${target} EXPORT ${PROJECT_EXPORT_SET})
   add_library(${PROJECT_NAME}::imports::main ALIAS ${target})
 
+  add_library(${PROJECT_NAME}.libraries INTERFACE EXCLUDE_FROM_ALL)
+  add_custom_target(${PROJECT_NAME}.executables)
+  add_custom_target(${PROJECT_NAME}.tests)
+
   # This command should be called when
   # `CMAKE_CURRENT_SOURCE_DIR == PROJECT_SOURCE_DIR`,
   # but when it isn't, we want to look in `PROJECT_SOURCE_DIR`.

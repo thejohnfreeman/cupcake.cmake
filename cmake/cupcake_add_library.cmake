@@ -6,7 +6,7 @@ include(cupcake_project_properties)
 include(GNUInstallDirs)
 
 # A target representing all libraries declared with the function below.
-add_custom_target(libraries)
+add_library(libraries INTERFACE EXCLUDE_FROM_ALL)
 
 # add_library(<name> [PRIVATE] [<source>...])
 function(cupcake_add_library name)
@@ -38,9 +38,11 @@ function(cupcake_add_library name)
     EXPORT_NAME lib${name}
   )
 
+  target_link_libraries(${PROJECT_NAME}.libraries INTERFACE ${target})
+
   # if(PROJECT_IS_TOP_LEVEL)
   if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
-    add_dependencies(libraries ${target})
+    target_link_libraries(libraries INTERFACE ${target})
   endif()
 
   cupcake_generate_version_header(${name})

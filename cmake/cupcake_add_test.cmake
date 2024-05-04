@@ -12,6 +12,8 @@ function(cupcake_add_test name)
   cupcake_find_sources(sources ${name})
   target_sources(${target} PRIVATE ${sources})
 
+  add_dependencies(${PROJECT_NAME}.tests ${target})
+
   # if(PROJECT_IS_TOP_LEVEL)
   if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
     add_dependencies(tests ${target})

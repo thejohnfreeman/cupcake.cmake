@@ -221,6 +221,23 @@ and automatically link to new requirements as they are added.
 Projects can use the special command `cupcake_link_libraries()`
 to link all the "main" required libraries listed in `cupcake.json`.
 
+`cupcake_project()` adds three more special targets:
+
+- `${PROJECT_NAME}.libraries`: An `INTERFACE` library target.
+- `${PROJECT_NAME}.executables`: A custom target.
+- `${PROJECT_NAME}.tests`: A custom target.
+
+All three are [excluded][EXCLUDE_FROM_ALL] from the "all" target.
+They each depend on all of the [libraries](#cupcake_add_library),
+[executables](#cupcake_add_executable), or [tests](#cupcake_add_test),
+respectively, added (by a `cupcake_add_<target>` command)
+in the project directly , i.e. not in a subproject.
+Further, if the project is the root project,
+equivalent targets are available under the unqualified names
+`libraries`, `executables`, and `tests`, respectively.
+These targets are intended to be automatic groups
+with names that can be easily passed to `cmake --build`.
+
 `cupcake_project()` changes these default behaviors:
 
 |  #  | Variable | Value
@@ -585,7 +602,7 @@ They are added to the list of tests run by [CTest][].
 The variable `this` is defined in the parent scope just as it is by
 [`cupcake_add_library()`](#cupcake_add_library) and for the same reason.
 
-The target is excluded from the ["all" target][EXCLUDE_FROM_ALL].
+The target is [excluded][EXCLUDE_FROM_ALL] from the "all" target.
 This way, resources are not spent building tests unless they are run.
 Each test is given a [fixture][43] that builds (or rebuilds)
 the test before it is run.

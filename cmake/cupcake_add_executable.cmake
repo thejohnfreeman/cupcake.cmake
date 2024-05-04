@@ -16,6 +16,8 @@ function(cupcake_add_executable name)
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} ${arg_UNPARSED_ARGUMENTS})
 
+  add_dependencies(${PROJECT_NAME}.executables ${target})
+
   # if(PROJECT_IS_TOP_LEVEL)
   if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
     add_dependencies(executables ${target})
