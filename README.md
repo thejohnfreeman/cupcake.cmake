@@ -230,7 +230,7 @@ to link all the "main" required libraries listed in `cupcake.json`.
 All three are [excluded][EXCLUDE_FROM_ALL] from the "all" target.
 They each depend on all of the [libraries](#cupcake_add_library),
 [executables](#cupcake_add_executable), or [tests](#cupcake_add_test),
-respectively, added (by a `cupcake_add_<target>` command)
+respectively, added (by a `cupcake_add_<target>()` command)
 in the project directly , i.e. not in a subproject.
 Further, if the project is the root project,
 equivalent targets are available under the unqualified names
@@ -617,13 +617,23 @@ cupcake_install_project()
 
 Add rules to install all exported targets.
 
-This command should be called only once,
+`cupcake_install_project()` installs a [package configuration file][pcf] that
+calls [`find_dependency()`][find_dependency]
+for all non-`PRIVATE` packages imported with
+[`cupcake_find_package()`](#cupcake_find_package), and
+exports all non-`PRIVATE` [libraries](#cupcake_add_library) and
+[executables](#cupcake_add_executable) added
+(by `cupcake_add_<target>()` commands) in the project directly,
+i.e. not in a subproject.
+These targets are exported with their external names,
+i.e. qualified by the project namespace,
+e.g. `${PROJECT_NAME}::lib<name>`.
+
+`cupcake_install_project()` installs a [package version file][pvf] too.
+
+`cupcake_install_project()` should be called only once,
 after all exported targets have been added.
 It should be called from the project's root `CMakeLists.txt`.
-
-After installation, dependents can import all exported targets,
-by their external names,
-with [`cupcake_find_package()`](#cupcake_find_package).
 
 
 ### `cupcake_install_cpp_info`
