@@ -40,8 +40,7 @@ function(cupcake_add_library name)
 
   target_link_libraries(${PROJECT_NAME}.libraries INTERFACE ${target})
 
-  # if(PROJECT_IS_TOP_LEVEL)
-  if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  if(PROJECT_IS_TOP_LEVEL)
     target_link_libraries(libraries INTERFACE ${target})
   endif()
 

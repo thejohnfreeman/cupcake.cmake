@@ -18,8 +18,7 @@ function(cupcake_add_executable name)
 
   add_dependencies(${PROJECT_NAME}.executables ${target})
 
-  # if(PROJECT_IS_TOP_LEVEL)
-  if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  if(PROJECT_IS_TOP_LEVEL)
     add_dependencies(executables ${target})
     # We must pass arguments through the environment
     # because `cmake --build` will not forward any.

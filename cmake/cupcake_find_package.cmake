@@ -29,8 +29,7 @@ macro(cupcake_find_package name)
       PROPERTY IMPORTED_TARGETS
     )
 
-    # if(PROJECT_IS_TOP_LEVEL AND ...)
-    if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME AND NOT ${cupcake_scope}_PRIVATE)
+    if(PROJECT_IS_TOP_LEVEL AND NOT ${cupcake_scope}_PRIVATE)
       cupcake_set_project_property(
         APPEND PROPERTY PROJECT_DEPENDENCIES "${name}"
       )

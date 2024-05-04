@@ -14,8 +14,7 @@ function(cupcake_add_test name)
 
   add_dependencies(${PROJECT_NAME}.tests ${target})
 
-  # if(PROJECT_IS_TOP_LEVEL)
-  if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  if(PROJECT_IS_TOP_LEVEL)
     add_dependencies(tests ${target})
   else()
     # Do not include tests of dependencies added as subdirectories.

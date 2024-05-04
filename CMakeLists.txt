@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.21)
 
 project(cupcake.cmake VERSION 0.0.0 LANGUAGES NONE)
 
@@ -6,8 +6,7 @@ include(CMakePackageConfigHelpers)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 include(cupcake)
 
-# if(NOT PROJECT_IS_TOP_LEVEL)
-if(NOT PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+if(NOT PROJECT_IS_TOP_LEVEL)
   return()
 endif()
 
