@@ -26,7 +26,7 @@ There are a few ways to accomplish that.
 First, add `cupcake.cmake` as a non-tool[^1] requirement to your Conan recipe:
 
 ```
-requires = ['cupcake.cmake/1.0.2']
+requires = ['cupcake.cmake/1.0.3']
 ```
 
 [^1]: The [`CMakeDeps`][CMakeDeps] generator will [not generate][6]
