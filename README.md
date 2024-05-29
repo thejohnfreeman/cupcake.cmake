@@ -707,6 +707,7 @@ of `cupcake.json` with a `.groups` array property (default value `["main"]`)
 that contains `<group>`.
 Then, it calls [`cupcake_find_package()`](#cupcake_find_package)
 for each selected object, passing the `.file` string property of the object
+(or if that is missing, the `.name` string property)
 and any additional arguments that were passed to `cupcake_find_packages()`.
 
 ```js
@@ -724,17 +725,16 @@ def cupcake_find_packages(group, *args):
     metadata = json.parse('cupcake.json')
     for package in metadata.get('imports', []):
         if group in package.get('groups', ['main']):
-            cupcake_find_package(package['file'], *args)
+            cupcake_find_package(package['file'] or package['name'], *args)
 ```
 
-Note: `cupcake_find_packages()` passes the package object's `file` property,
-and not its `name` property,
-because `name` is the name of the package in the Conan ecosystem,
-while `file` is the name of the [package configuration file][pcf]
+Note: The `.name` property is the name of the package in the Conan ecosystem,
+while the `.file` property is the name of the [package configuration file][pcf]
 that the [`CMakeDeps`][CMakeDeps] generator generates for it,
 corresponding to the [`cmake_file_name` property][44]
-of the package's [`cpp_info`][cpp_info].
-
+of the package recipe's [`cpp_info`][cpp_info].
+When the `cmake_file_name` property is missing,
+`CMakeDeps` uses the package name as its default value.
 
 
 ### `cupcake_link_libraries`
