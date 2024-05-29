@@ -506,7 +506,7 @@ Libraries must _not_ define their own public headers with these names.
 cupcake_add_executable(<name> [PRIVATE])
 ```
 
-Adds targets for an executable by calling
+Add targets for an executable by calling
 [`add_executable()`][add_executable].
 
 Unless `PRIVATE` is passed, the executable is exported,
@@ -582,7 +582,8 @@ that depends on `execute.<name>`.
 cupcake_enable_testing()
 ```
 
-Conditionally add tests to the project.
+Conditionally add tests to the project,
+in the style of [`enable_testing()`][enable_testing].
 
 The command does nothing if the project is not top-level.
 Dependents generally want to run a dependency's tests only when the dependency
@@ -610,16 +611,26 @@ Dependencies that only the tests require should be imported there too.
 cupcake_add_test(<name>)
 ```
 
-Add a target for a test by calling [`add_test()`][add_test].
-A test is an executable that returns 0 if and only if it passes.
+Add targets for an executable by calling
+[`add_executable()`][add_executable],
+and add a CMake test whose command executes that executable by calling
+[`add_test()`][add_test].
 
-This command should be called only from the `tests` subdirectory,
+In CMake's documentation, the term "test", which I call here a "CMake test",
+refers to a command that exits with code 0 if and only if it passes.
+Typical commands simply execute an executable target in the project.
+`cupcake_add_test()` implements exactly this pattern.
+In this document, the term "test" refers to
+the executable, the target, and the CMake test as a single unit.
+Where necessary, I differentiate them.
+
+`cupcake_add_test()` should be called only from the `tests` subdirectory,
 where all tests should live.
-A test must have sources,
+The executable must have sources,
 and they should be either the single file `tests/<name>.cpp`
 or every `.cpp` file under the directory `tests/<name>/`.
 
-A test may include
+The executable may include
 its own private headers by their paths relative to the project's
 root directory (i.e. starting with `tests/<name>/`),
 but it may not include other headers in the project,
@@ -630,16 +641,25 @@ because `cupcake_add_library()` creates temporary symbolic links
 in the build directory pointing to the permitted headers,
 and only those will be found by the compiler.
 
-The target is given an unspecified name.
-Tests are not exported, meaning they are not installed.
-They are added to the list of tests run by [CTest][].
-The variable `this` is defined in the parent scope just as it is by
-[`cupcake_add_library()`](#cupcake_add_library) and for the same reason.
+`cupcake_add_test()` adds an internal target named `${PROJECT_NAME}.tests.<name>`,
+with an abbreviated [alias][3] named `${PROJECT_NAME}.t.<name>`,
+as a dependency of the target `${PROJECT_NAME}.tests`.
+If the project is the root project,
+then it gives the internal target additional unqualified aliases
+`tests.<name>` and `t.<name>`
+and adds it as a dependency of the unqualified target `tests`.
+Tests are never exported, meaning they are never installed
+nor given external targets.
+`cupcake_add_test()` defines the variable `this` in the parent scope
+just like [`cupcake_add_library()`](#cupcake_add_library)
+and for the same reason.
 
 The target is [excluded][EXCLUDE_FROM_ALL] from the "all" target.
 This way, resources are not spent building tests unless they are run.
-Each test is given a [fixture][43] that builds (or rebuilds)
-the test before it is run.
+
+The CMake test is added to the list of tests run by [CTest][].
+It is given a [fixture][43] that builds (or rebuilds)
+the executable before it is run.
 
 
 ### `cupcake_install_project`
@@ -947,6 +967,7 @@ def cupcake_add_tests():
 [project]: https://cmake.org/cmake/help/latest/command/project.html
 [target_link_libraries]: https://cmake.org/cmake/help/latest/command/target_link_libraries.html#libraries-for-a-target-and-or-its-dependents
 [CTest]: https://cmake.org/cmake/help/latest/module/CTest.html
+[enable_testing]: https://cmake.org/cmake/help/latest/command/enable_testing.html
 [pcf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-configuration-file
 [pvf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-version-file
 [CMakeDeps]: https://docs.conan.io/2/reference/tools/cmake/cmakedeps.html
