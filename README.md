@@ -778,7 +778,9 @@ def cupcake_link_libraries(target, scope, group):
     metadata = json.parse('cupcake.json')
     for package in metadata.get('imports', []):
         if group in package.get('groups', ['main']):
-            target_link_libraries(target, scope, package['targets'])
+            name = package['name']
+            targets = package.get('targets', [f'{name}::{name}'])
+            target_link_libraries(target, scope, targets)
 ```
 
 
