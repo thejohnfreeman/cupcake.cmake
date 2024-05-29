@@ -1,0 +1,11 @@
+# Assert that a condition is true.
+function(cupcake_assert)
+  set(condition FALSE)
+  if(${ARGN})
+    set(condition TRUE)
+  endif()
+  if(NOT condition)
+    string(REPLACE ";" " " expression "${ARGN}")
+    message(FATAL_ERROR "assertion failed: (${expression})")
+  endif()
+endfunction()

@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
 # Include only public API commands.
+include(cupcake_assert)
 include(cupcake_project)
 include(cupcake_find_package)
 include(cupcake_find_packages)
