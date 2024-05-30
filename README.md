@@ -291,7 +291,8 @@ resolve its addresses in the same way.
     the [package version file][pvf], and any [target export files][30].
 - **`${PROJECT_NAME}_FOUND`**:
     `TRUE`, to short-circuit calls to `find_package()`
-    looking for this project's package from nested subprojects (e.g. examples).
+    looking for this project's package from other subprojects,
+    e.g. examples or siblings.
 
 `cupcake_project()` adds these global variables (same for all subprojects):
 
