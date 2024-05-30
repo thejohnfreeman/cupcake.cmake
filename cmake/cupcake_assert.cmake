@@ -1,11 +1,11 @@
 # Assert that a condition is true.
-function(cupcake_assert)
-  set(condition FALSE)
-  if(${ARGN})
-    set(condition TRUE)
+macro(cupcake_assert)
+  if(NOT (${ARGN}))
+    string(REPLACE ";" " " _expression "${ARGN}")
+    # Every line indented by a single space to disable CMake formatting.
+    # CMAKE_CURRENT_LIST_LINE does not have dynamic scope like
+    # CMAKE_CURRENT_LIST_FILE.
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/14118
+    message(FATAL_ERROR " ${CMAKE_CURRENT_LIST_FILE}:??:\n assertion failed: (${_expression})")
   endif()
-  if(NOT condition)
-    string(REPLACE ";" " " expression "${ARGN}")
-    message(FATAL_ERROR "assertion failed: (${expression})")
-  endif()
-endfunction()
+endmacro()
