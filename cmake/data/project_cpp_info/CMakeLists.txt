@@ -10,9 +10,9 @@ find_package(
   PATHS ${CMAKE_INSTALL_PREFIX}
 )
 
-# declare_libraries(<output> [<target>...])
+# declare_libraries(<variable> [<target>...])
 #
-# For each library target, add Python statements to the output variable
+# For each library target, add Python statements to the named variable
 # to declare these properties on a component named after the target:
 #
 # - requires: list of linked target names
@@ -23,25 +23,44 @@ find_package(
 # - sharedlinkflags: list of linker flags
 # - libs: singleton list of installed library name to be searched by linker
 # - libdirs: singleton list of directory, relative to the install prefix, where library installed
-function(declare_libraries output)
+function(declare_libraries variable)
   set(target_pattern "^([^:]+)::(.+)$")
 
   foreach(target ${ARGN})
     # Peel off the namespace to get the unqualified CMake target name
     # which we'll use as the Conan component name.
     string(REGEX MATCH "${target_pattern}" match ${target})
-    if(CMAKE_MATCH_1 STREQUAL PACKAGE_NAME)
-      set(name ${CMAKE_MATCH_2})
-    else()
+    if(NOT CMAKE_MATCH_1 STREQUAL PACKAGE_NAME)
       message(FATAL_ERROR "foreign target: '${target}'")
+    endif()
+
+    # Target name unqualified by package name.
+    set(tname ${CMAKE_MATCH_2})
+
+    string(REGEX MATCH "${target_pattern}" match ${tname})
+    if(NOT CMAKE_MATCH_1 STREQUAL "libraries")
+      message(FATAL_ERROR "not a library: '${target}'")
+    endif()
+
+    # Library name.
+    set(name ${CMAKE_MATCH_2})
+    # Component name cannot contain double colon (::).
+    set(cname libraries.${name})
+    set(components "${components}'${cname}',")
+
+    # "${cname}" == "libraries.${name}"
+    set(aliases "'${PACKAGE_NAME}::l::${name}'")
+    if(name STREQUAL PACKAGE_NAME)
+      set(aliases "${aliases},'${PACKAGE_NAME}::library'")
     endif()
 
     string(APPEND tail
       # - names[generator]: unqualified target name
-      "self.components['${name}'].names['cmake_find_package'] = '${name}'\n"
-      "self.components['${name}'].names['cmake_find_package_multi'] = '${name}'\n"
+      "self.components['${cname}'].names['cmake_find_package'] = '${tname}'\n"
+      "self.components['${cname}'].names['cmake_find_package_multi'] = '${tname}'\n"
       # - set_property('cmake_target_name'): qualified target name
-      "self.components['${name}'].set_property('cmake_target_name', '${target}')\n"
+      "self.components['${cname}'].set_property('cmake_target_name', '${target}')\n"
+      "self.components['${cname}'].set_property('cmake_target_aliases', [${aliases}])\n"
     )
 
     get_target_property(links ${target} INTERFACE_LINK_LIBRARIES)
@@ -68,7 +87,7 @@ function(declare_libraries output)
         string(APPEND requires "'${lname}',")
       endforeach()
       string(APPEND tail
-        "self.components['${name}'].requires = [${requires}]\n"
+        "self.components['${cname}'].requires = [${requires}]\n"
       )
     endif()
 
@@ -81,7 +100,7 @@ function(declare_libraries output)
       endforeach()
       if(NOT includedirs STREQUAL "'include',")
         string(APPEND tail
-          "self.components['${name}'].includedirs = [${includedirs}]\n"
+          "self.components['${cname}'].includedirs = [${includedirs}]\n"
         )
       endif()
     endif()
@@ -92,7 +111,7 @@ function(declare_libraries output)
         string(APPEND defines "'${definition}',")
       endforeach()
       string(APPEND tail
-        "self.components['${name}'].defines = [${defines}]\n"
+        "self.components['${cname}'].defines = [${defines}]\n"
       )
     endif()
 
@@ -102,7 +121,7 @@ function(declare_libraries output)
         string(APPEND cxxflags "'${option}',")
       endforeach()
       string(APPEND tail
-        "self.components['${name}'].cxxflags = [${cxxflags}]\n"
+        "self.components['${cname}'].cxxflags = [${cxxflags}]\n"
       )
     endif()
 
@@ -116,7 +135,7 @@ function(declare_libraries output)
         string(APPEND sharedlinkflags "'${option}',")
       endforeach()
       string(APPEND tail
-        "self.components['${name}'].sharedlinkflags = [${sharedlinkflags}]\n"
+        "self.components['${cname}'].sharedlinkflags = [${sharedlinkflags}]\n"
       )
     endif()
 
@@ -127,17 +146,22 @@ function(declare_libraries output)
       get_filename_component(libdir "${location}" DIRECTORY)
       file(RELATIVE_PATH libdir "${CMAKE_INSTALL_PREFIX}" "${libdir}")
       string(APPEND tail
-        "self.components['${name}'].libs = ['${lib}']\n"
+        "self.components['${cname}'].libs = ['${lib}']\n"
       )
       if(NOT libdir STREQUAL "lib")
         string(APPEND tail
-          "self.components['${name}'].libdirs = ['${libdir}']\n"
+          "self.components['${cname}'].libdirs = ['${libdir}']\n"
         )
       endif()
     endif()
   endforeach()
 
-  set(${output} "${${output}}${tail}" PARENT_SCOPE)
+  string(APPEND tail
+    "self.components['libraries'].set_property('cmake_target_name', 'zero::libraries')\n"
+    "self.components['libraries'].requires = [${components}]\n"
+  )
+
+  set(${variable} "${${variable}}${tail}" PARENT_SCOPE)
 endfunction()
 
 string(APPEND cpp_info
