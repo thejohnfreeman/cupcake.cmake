@@ -1,3 +1,7 @@
+if(@PROJECT_NAME@_FOUND)
+  return()
+endif()
+
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
