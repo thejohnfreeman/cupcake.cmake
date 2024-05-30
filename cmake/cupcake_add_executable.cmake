@@ -13,19 +13,37 @@ add_custom_target(executables)
 function(cupcake_add_executable name)
   cmake_parse_arguments(arg "PRIVATE" "" "" ${ARGN})
 
-  set(target ${PROJECT_NAME}.${name})
+  set(target ${PROJECT_NAME}.executables.${name})
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} ${arg_UNPARSED_ARGUMENTS})
+  add_executable(${PROJECT_NAME}.e.${name} ALIAS ${target})
+  if(name STREQUAL PROJECT_NAME)
+    add_executable(${PROJECT_NAME}.executable ALIAS ${target})
+  endif()
 
   add_dependencies(${PROJECT_NAME}.executables ${target})
 
+  # We must pass arguments through the environment
+  # because `cmake --build` will not forward any.
+  # We must read arguments in a CMake script
+  # because the generator command has no cross-platform method
+  # to read the environment.
+  add_custom_target(
+    execute.${PROJECT_NAME}.${name}
+    COMMAND "${CMAKE_COMMAND}"
+    "-Dcmd=$<TARGET_FILE:${target}>"
+    -P "${CUPCAKE_MODULE_DIR}/data/call.cmake"
+  )
+
   if(PROJECT_IS_TOP_LEVEL)
     add_dependencies(executables ${target})
-    # We must pass arguments through the environment
-    # because `cmake --build` will not forward any.
-    # We must read arguments in a CMake script
-    # because the generator command has no cross-platform method
-    # to read the environment.
+    add_executable(executables.${name} ALIAS ${target})
+    add_executable(e.${name} ALIAS ${target})
+    if(name STREQUAL PROJECT_NAME)
+      add_executable(executable ALIAS ${target})
+    endif()
+    # Same command as the other custom target.
+    # Would be nice to have an alias for a custom target.
     add_custom_target(
       execute.${name}
       COMMAND "${CMAKE_COMMAND}"
@@ -50,7 +68,7 @@ function(cupcake_add_executable name)
 
   set_target_properties(${target} PROPERTIES
     OUTPUT_NAME ${name}
-    EXPORT_NAME ${name}
+    EXPORT_NAME executables::${name}
   )
 
   # If we call `copy`, but the "from" file list is empty, it will error.
@@ -72,10 +90,14 @@ function(cupcake_add_executable name)
   )
 
   if(NOT arg_PRIVATE)
-    set(alias ${PROJECT_NAME}::${name})
+    set(alias ${PROJECT_NAME}::executables::${name})
     add_executable(${alias} ALIAS ${target})
+    add_executable(${PROJECT_NAME}::e::${name} ALIAS ${target})
+    if(name STREQUAL PROJECT_NAME)
+      add_executable(${PROJECT_NAME}::executable ALIAS ${target})
+    endif()
     cupcake_set_project_property(
-      APPEND PROPERTY PROJECT_EXECUTABLES "${alias}"
+      APPEND PROPERTY PROJECT_EXECUTABLE_NAMES "${name}"
     )
     install(
       TARGETS ${target}

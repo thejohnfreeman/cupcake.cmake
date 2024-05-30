@@ -107,6 +107,7 @@ macro(cupcake_project)
   add_library(${PROJECT_NAME}.libraries INTERFACE EXCLUDE_FROM_ALL)
   add_library(${PROJECT_NAME}::libraries ALIAS ${PROJECT_NAME}.libraries)
   add_custom_target(${PROJECT_NAME}.executables)
+  # There is no external group target for executables.
   add_custom_target(${PROJECT_NAME}.tests)
 
   # This command should be called when

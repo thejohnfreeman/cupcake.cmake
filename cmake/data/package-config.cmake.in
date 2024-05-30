@@ -32,3 +32,23 @@ add_library(@PROJECT_NAME@::libraries INTERFACE IMPORTED)
 target_link_libraries(
   @PROJECT_NAME@::libraries INTERFACE ${@PROJECT_NAME@_LIBRARIES}
 )
+
+set(@PROJECT_NAME@_EXECUTABLE_NAMES "@PROJECT_EXECUTABLE_NAMES@")
+foreach(name IN LISTS @PROJECT_NAME@_EXECUTABLE_NAMES)
+  set(target @PROJECT_NAME@::executables::${name})
+  # This variable must be exported for `cupcake_install_cpp_info`.
+  list(APPEND @PROJECT_NAME@_EXECUTABLES ${target})
+  add_executable(@PROJECT_NAME@::e::${name} ALIAS ${target})
+  if(name STREQUAL @PROJECT_NAME@)
+    add_executable(@PROJECT_NAME@::executable ALIAS ${target})
+  endif()
+endforeach()
+# We cannot add a custom target with :: in the name.
+# It doesn't make sense to add a library target to group executables.
+# It doesn't make sense to add an executable target with no executable
+# just to group executables as dependencies.
+# Thus, it seems like we cannot implement
+# an external group target for executables,
+# but it is not clear why dependents would even want one.
+# Builders want one as a shortcut to build all and only executables,
+# and for that they only need the internal group target.
