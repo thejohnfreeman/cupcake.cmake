@@ -31,8 +31,14 @@ function(cupcake_add_executable name)
   add_custom_target(
     execute.${PROJECT_NAME}.${name}
     COMMAND "${CMAKE_COMMAND}"
-    "-Dcmd=$<TARGET_FILE:${target}>"
+    "-Dexecutable=$<TARGET_FILE:${target}>"
     -P "${CUPCAKE_MODULE_DIR}/data/call.cmake"
+  )
+  add_custom_target(
+    debug.${PROJECT_NAME}.${name}
+    COMMAND "${CMAKE_COMMAND}"
+    "-Dexecutable=$<TARGET_FILE:${target}>"
+    -P "${CUPCAKE_MODULE_DIR}/data/debug.cmake"
   )
 
   if(PROJECT_IS_TOP_LEVEL)
@@ -42,17 +48,15 @@ function(cupcake_add_executable name)
     if(name STREQUAL PROJECT_NAME)
       add_executable(executable ALIAS ${target})
     endif()
-    # Same command as the other custom target.
-    # Would be nice to have an alias for a custom target.
-    add_custom_target(
-      execute.${name}
-      COMMAND "${CMAKE_COMMAND}"
-      "-Dcmd=$<TARGET_FILE:${target}>"
-      -P "${CUPCAKE_MODULE_DIR}/data/call.cmake"
-    )
+    add_custom_target(execute.${name})
+    add_dependencies(execute.${name} execute.${PROJECT_NAME}.${name})
+    add_custom_target(debug.${name})
+    add_dependencies(debug.${name} debug.${PROJECT_NAME}.${name})
     if(name STREQUAL CMAKE_PROJECT_NAME)
       add_custom_target(execute)
       add_dependencies(execute execute.${name})
+      add_custom_target(debug)
+      add_dependencies(debug debug.${name})
     endif()
   endif()
 
