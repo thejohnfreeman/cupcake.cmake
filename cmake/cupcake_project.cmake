@@ -105,6 +105,7 @@ macro(cupcake_project)
   add_library(${PROJECT_NAME}::imports::main ALIAS ${target})
 
   add_library(${PROJECT_NAME}.libraries INTERFACE EXCLUDE_FROM_ALL)
+  add_library(${PROJECT_NAME}::libraries ALIAS ${PROJECT_NAME}.libraries)
   add_custom_target(${PROJECT_NAME}.executables)
   add_custom_target(${PROJECT_NAME}.tests)
 

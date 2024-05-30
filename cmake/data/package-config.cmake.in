@@ -2,9 +2,6 @@
 
 include(CMakeFindDependencyMacro)
 
-# This variable must be exported for `cupcake_install_cpp_info`.
-set(@PROJECT_NAME@_LIBRARIES "@PROJECT_LIBRARIES@")
-
 # Package Configuration Files define all variables in the calling scope.
 # We don't want to interfere with the caller's variables by default.
 # CMake 3.25 introduces `block()`, but for now we want to support CMake 3.22,
@@ -20,3 +17,18 @@ function(find_@random@)
 endfunction()
 
 find_@random@()
+
+set(@PROJECT_NAME@_LIBRARY_NAMES "@PROJECT_LIBRARY_NAMES@")
+foreach(name IN LISTS @PROJECT_NAME@_LIBRARY_NAMES)
+  set(target @PROJECT_NAME@::libraries::${name})
+  # This variable must be exported for `cupcake_install_cpp_info`.
+  list(APPEND @PROJECT_NAME@_LIBRARIES ${target})
+  add_library(@PROJECT_NAME@::l::${name} ALIAS ${target})
+  if(name STREQUAL @PROJECT_NAME@)
+    add_library(@PROJECT_NAME@::library ALIAS ${target})
+  endif()
+endforeach()
+add_library(@PROJECT_NAME@::libraries INTERFACE IMPORTED)
+target_link_libraries(
+  @PROJECT_NAME@::libraries INTERFACE ${@PROJECT_NAME@_LIBRARIES}
+)
