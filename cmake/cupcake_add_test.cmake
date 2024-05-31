@@ -5,9 +5,10 @@ include(cupcake_find_sources)
 add_custom_target(tests)
 
 function(cupcake_add_test name)
-  set(target ${PROJECT_NAME}.test.${name})
+  set(target ${PROJECT_NAME}.tests.${name})
   set(this ${target} PARENT_SCOPE)
   add_executable(${target} EXCLUDE_FROM_ALL ${ARGN})
+  add_executable(${PROJECT_NAME}.t.${name} ALIAS ${target})
 
   # Let the test include "private" headers if it wants.
   cupcake_isolate_headers(
@@ -23,6 +24,8 @@ function(cupcake_add_test name)
 
   if(PROJECT_IS_TOP_LEVEL)
     add_dependencies(tests ${target})
+    add_executable(tests.${name} ALIAS ${target})
+    add_executable(t.${name} ALIAS ${target})
   else()
     # Do not include tests of dependencies added as subdirectories.
     return()

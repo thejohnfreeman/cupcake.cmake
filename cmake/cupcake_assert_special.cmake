@@ -1,5 +1,8 @@
 include_guard(GLOBAL)
 
+# Assert, from a special function,
+# that cupcake.json exists
+# and special functions are not disabled.
 macro(cupcake_assert_special)
   if(NOT PROJECT_JSON)
     message(DEBUG "missing ${PROJECT_SOURCE_DIR}/cupcake.json")

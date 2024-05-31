@@ -17,7 +17,7 @@ function(cupcake_add_library name)
   # so that libraries and executables can share the same name.
   # They will be distinguished in the filesystem by their filename prefix
   # and suffix, and within CMake by this prefix.
-  set(target ${PROJECT_NAME}.lib${name})
+  set(target ${PROJECT_NAME}.libraries.${name})
   set(this ${target} PARENT_SCOPE)
 
   # If this is a header-only library, then it must have type INTERFACE.
@@ -35,14 +35,23 @@ function(cupcake_add_library name)
   endif()
 
   add_library(${target} ${type} ${arg_UNPARSED_ARGUMENTS})
+  add_library(${PROJECT_NAME}.l.${name} ALIAS ${target})
+  if(name STREQUAL PROJECT_NAME)
+    add_library(${PROJECT_NAME}.library ALIAS ${target})
+  endif()
   set_target_properties(${target} PROPERTIES
-    EXPORT_NAME lib${name}
+    EXPORT_NAME libraries::${name}
   )
 
   target_link_libraries(${PROJECT_NAME}.libraries INTERFACE ${target})
 
   if(PROJECT_IS_TOP_LEVEL)
     target_link_libraries(libraries INTERFACE ${target})
+    add_library(libraries.${name} ALIAS ${target})
+    add_library(l.${name} ALIAS ${target})
+    if(name STREQUAL PROJECT_NAME)
+      add_library(library ALIAS ${target})
+    endif()
   endif()
 
   cupcake_generate_version_header(${name})
@@ -111,10 +120,14 @@ function(cupcake_add_library name)
   endif()
 
   if(NOT arg_PRIVATE)
-    set(alias ${PROJECT_NAME}::lib${name})
+    set(alias ${PROJECT_NAME}::libraries::${name})
     add_library(${alias} ALIAS ${target})
+    add_library(${PROJECT_NAME}::l::${name} ALIAS ${target})
+    if(name STREQUAL PROJECT_NAME)
+      add_library(${PROJECT_NAME}::library ALIAS ${target})
+    endif()
     cupcake_set_project_property(
-      APPEND PROPERTY PROJECT_LIBRARIES "${alias}"
+      APPEND PROPERTY PROJECT_LIBRARY_NAMES "${name}"
     )
     install(
       TARGETS ${target}
