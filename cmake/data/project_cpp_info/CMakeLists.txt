@@ -170,6 +170,11 @@ string(APPEND cpp_info
   "self.components['libraries'].requires = [${components}]\n"
 )
 
+# There is no way to model executables in `cpp_info`.
+# At the moment, Conan adds `bindirs` from `tools_requires` to the `PATH`,
+# which has been enough for most consumers.
+# https://github.com/conan-io/conan/issues/7240#issuecomment-2100421551
+
 file(GENERATE
   OUTPUT "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_EXPORTDIR}/${PACKAGE_NAME}/cpp_info.py"
   CONTENT "${cpp_info}"
