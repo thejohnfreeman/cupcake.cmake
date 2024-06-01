@@ -221,13 +221,15 @@ and automatically link to new requirements as they are added.
 Projects can use the special command `cupcake_link_libraries()`
 to link all the "main" required libraries listed in `cupcake.json`.
 
-`cupcake_project()` adds three more special targets:
+`cupcake_project()` adds three more special internal targets:
 
-- `${PROJECT_NAME}.libraries`: An `INTERFACE` library target.
-- `${PROJECT_NAME}.executables`: A custom target.
+- `${PROJECT_NAME}.libraries`: An [`INTERFACE` library][4] target.
+- `${PROJECT_NAME}.executables`: A [custom][45] target.
 - `${PROJECT_NAME}.tests`: A custom target.
 
 All three are [excluded][EXCLUDE_FROM_ALL] from the "all" target.
+Each has an external alias with the same name,
+except the dot (`.`) is replaced with a double colon (`::`).
 They each depend on all of the [libraries](#cupcake_add_library),
 [executables](#cupcake_add_executable), or [tests](#cupcake_add_test),
 respectively, added (by a `cupcake_add_<target>()` command)
@@ -438,14 +440,35 @@ meaning it is included when installing the project.
 `PRIVATE` libraries can be good for sharing code among tests.
 
 `cupcake_add_library()`
-adds an internal target named `${PROJECT_NAME}.lib<name>`
-and, if the library is exported,
-an external [`ALIAS` target][3] named `${PROJECT_NAME}::lib<name>`.
+adds an internal target named `${PROJECT_NAME}.libraries.<name>`,
+with an abbreviated [alias][3] named `${PROJECT_NAME}.l.<name>`.
+If the library has the same name as the project,
+then it is the project's _default library_ target
+and gets the additional alias `${PROJECT_NAME}.library`.
+
+If the library is exported,
+then `cupcake_add_library()` adds external [`ALIAS`][3] targets
+matching all of the above names,
+but with the dot (`.`) separators replaced with double colons (`::`),
+i.e. `${PROJECT_NAME}::libraries::<name>`, `${PROJECT_NAME}::l::<name>`,
+and `${PROJECT_NAME}::library`.
+
 Commands in the same project should use the internal target name.
 Commands in different projects,
-including downstream projects that
-import the targets exported by the current project,
+even if they are children (e.g. examples) or siblings
+(e.g. fellow dependencies) sharing the same root project,
 should use the external target name.
+The external target names match the ones supplied by
+the installed package configuration file
+(see [`cupcake_install_project()`](#cupcake_install_project))
+and/or the installed `cpp_info.py` script
+(see [`cupcake_install_cpp_info()`](#cupcake_install_cpp_info)).
+
+The internal target is added as a dependency
+of the internal [`INTERFACE` library][4] target `${PROJECT_NAME}.libraries`,
+which has an external alias `${PROJECT_NAME}::libraries`,
+and an internal alias `libraries` if the project is the root project
+(see [`cupcake_project()`](#cupcake_project)).
 
 `cupcake_add_library()` returns a variable, `this`,
 with the name of the internal target
@@ -515,14 +538,35 @@ meaning it is included when installing the project.
 `PRIVATE` executables can be good for manual testing.
 
 `cupcake_add_executable()`
-adds an internal target named `${PROJECT_NAME}.<name>`
-and, if the executable is exported,
-an external [`ALIAS` target][3] named `${PROJECT_NAME}::<name>`.
+adds an internal target named `${PROJECT_NAME}.executables.<name>`,
+with an abbreviated [alias][47] named `${PROJECT_NAME}.e.<name>`.
+If the executable has the same name as the project,
+then it is the project's _default executable_ target
+and gets the additional alias `${PROJECT_NAME}.executable`.
+
+If the executable is exported,
+then `cupcake_add_executable()` adds external [`ALIAS` targets][3]
+matching all of the above names,
+but with the dot (`.`) separators replaced with double colons (`::`),
+i.e. `${PROJECT_NAME}::executables::<name>`, `${PROJECT_NAME}::e::<name>`,
+and `${PROJECT_NAME}::executable`.
+
 Commands in the same project should use the internal target name.
 Commands in different projects,
-including downstream projects that
-import the targets exported by the current project,
+even if they are children (e.g. examples) or siblings
+(e.g. fellow dependencies) sharing the same root project,
 should use the external target name.
+The external target names match the ones supplied by
+the installed package configuration file
+(see [`cupcake_install_project()`](#cupcake_install_project))
+and/or the installed `cpp_info.py` script
+(see [`cupcake_install_cpp_info()`](#cupcake_install_cpp_info)).
+
+The internal target is added as a dependency
+of the internal [custom][45] target `${PROJECT_NAME}.executables`,
+which has no external alias,
+but has an internal alias `executables` if the project is the root project
+(see [`cupcake_project()`](#cupcake_project)).
 
 `cupcake_add_executable()` returns a variable, `this`,
 with the name of the internal target
@@ -545,9 +589,10 @@ because `cupcake_add_library()` creates temporary symbolic links
 in the build directory pointing to the permitted headers,
 and only those will be found by the compiler.
 
-If the project is the root project,
-then `cupcake_add_executable()`
-adds one more internal target named `execute.<name>`.
+`cupcake_add_executable()` adds two more internal targets.
+The first is named `execute.${PROJECT_NAME}.<name>`,
+aliased as `execute.<name>` if the project is the root project,
+and as `execute` if the executable name matches the project name too.
 It is a [custom][45] target that executes the executable.
 You can invoke it yourself with the following command
 instead of digging around in the output directory to find the executable.
@@ -560,20 +605,28 @@ Additionally, the target passes any
 [CMake list][46] of command-line arguments
 found in the environment variable `CUPCAKE_EXE_ARGUMENTS`.[^3]
 In other words,
-if you want to pass any command-line arguments through the target,
+if you want to pass any command-line arguments
+through the custom target to the executable,
 then you must set environment variable `CUPCAKE_EXE_ARGUMENTS`
 to a semicolon-separated (`;`) list of string arguments,
-where each argument internally escapes any semicolons (with `\;`).
-If you are using [cupcake.py][], then it will set `CUPCAKE_EXE_ARGUMENTS`
+where each argument internally escapes any semicolons (with `\;`)
+and is double-quoted (`"`) if it contains any whitespace.
+If you use [cupcake.py][], then it will set `CUPCAKE_EXE_ARGUMENTS`
 to forward any trailing arguments you pass to `cupcake exe <name>`.
 
 [^3]: An environment variable must be used
 because `cmake --build` does not forward any command-line arguments.
 
-If the project is the root project
-and the executable name matches the project name,
-then `cupcake_add_executable()` adds one more internal target named `execute`
-that depends on `execute.<name>`.
+The second target is named `debug.${PROJECT_NAME}.<name>`,
+aliased as `debug.<name>` if the project is the root project,
+and as `debug` if the executable name matches the project name too.
+It is a custom target that works almost like `execute.${PROJECT_NAME}.<name>`,
+except that it executes [GDB][], the GNU debugger, on the executable target,
+and initializes it with a [command file][48]
+that sets the command line arguments found in `CUPCAKE_EXE_ARGUMENTS`
+and then copies whatever is in the `.gdbinit` file of your current directory.
+If you use [cupcake.py][], then it will set `CUPCAKE_EXE_ARGUMENTS`
+to forward any trailing arguments you pass to `cupcake debug <name>`.
 
 
 ### `cupcake_enable_testing`
@@ -625,6 +678,23 @@ In this document, the term "test" refers to
 the executable, the target, and the CMake test as a single unit.
 Where necessary, I differentiate them.
 
+`cupcake_add_test()`
+adds an internal target named `${PROJECT_NAME}.tests.<name>`,
+with an abbreviated [alias][3] named `${PROJECT_NAME}.t.<name>`,
+as a dependency of the target `${PROJECT_NAME}.tests`.
+If the project is the root project,
+then it gives the internal target additional unqualified aliases
+`tests.<name>` and `t.<name>`
+and adds it as a dependency of the unqualified target `tests`.
+Tests are never exported, meaning they are never installed
+nor given external targets.
+`cupcake_add_test()` defines the variable `this` in the parent scope
+just like [`cupcake_add_library()`](#cupcake_add_library)
+and for the same reason.
+
+The target is [excluded][EXCLUDE_FROM_ALL] from the "all" target.
+This way, resources are not spent building tests unless they are run.
+
 `cupcake_add_test()` should be called only from the `tests` subdirectory,
 where all tests should live.
 The executable must have sources,
@@ -641,22 +711,6 @@ In fact, it _cannot_ include unlinked headers
 because `cupcake_add_library()` creates temporary symbolic links
 in the build directory pointing to the permitted headers,
 and only those will be found by the compiler.
-
-`cupcake_add_test()` adds an internal target named `${PROJECT_NAME}.tests.<name>`,
-with an abbreviated [alias][3] named `${PROJECT_NAME}.t.<name>`,
-as a dependency of the target `${PROJECT_NAME}.tests`.
-If the project is the root project,
-then it gives the internal target additional unqualified aliases
-`tests.<name>` and `t.<name>`
-and adds it as a dependency of the unqualified target `tests`.
-Tests are never exported, meaning they are never installed
-nor given external targets.
-`cupcake_add_test()` defines the variable `this` in the parent scope
-just like [`cupcake_add_library()`](#cupcake_add_library)
-and for the same reason.
-
-The target is [excluded][EXCLUDE_FROM_ALL] from the "all" target.
-This way, resources are not spent building tests unless they are run.
 
 The CMake test is added to the list of tests run by [CTest][].
 It is given a [fixture][43] that builds (or rebuilds)
@@ -682,7 +736,7 @@ exports all non-`PRIVATE` [libraries](#cupcake_add_library) and
 i.e. not in a subproject.
 These targets are exported with their external names,
 i.e. qualified by the project namespace,
-e.g. `${PROJECT_NAME}::lib<name>`.
+e.g. `${PROJECT_NAME}::libraries::<name>`.
 
 `cupcake_install_project()` installs a [package version file][pvf] too.
 
@@ -982,6 +1036,7 @@ def cupcake_add_tests():
 [requires]: https://docs.conan.io/1/reference/conanfile/attributes.html#requires
 [cupcake.py]: https://github.com/thejohnfreeman/cupcake.py
 [clangd]: https://clangd.llvm.org/
+[GDB]: https://www.sourceware.org/gdb/
 
 [1]: https://cmake.org/cmake/help/latest/command/project.html#usage
 [2]: https://docs.conan.io/1/creating_packages/package_information.html
@@ -1029,3 +1084,6 @@ def cupcake_add_tests():
 [44]: https://docs.conan.io/2/reference/tools/cmake/cmakedeps.html#cmakedeps-properties
 [45]: https://cmake.org/cmake/help/latest/command/add_custom_target.html
 [46]: https://cmake.org/cmake/help/latest/command/list.html#introduction
+[47]: https://cmake.org/cmake/help/latest/command/add_executable.html#alias-executables
+[48]: https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_190.html
+[49]: https://sourceware.org/gdb/current/onlinedocs/gdb.html/Arguments.html#Arguments
