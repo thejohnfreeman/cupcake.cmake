@@ -6,9 +6,6 @@ include(cupcake_isolate_headers)
 include(cupcake_project_properties)
 include(GNUInstallDirs)
 
-# A target representing all libraries declared with the function below.
-add_library(libraries INTERFACE EXCLUDE_FROM_ALL)
-
 # add_library(<name> [PRIVATE] [<source>...])
 function(cupcake_add_library name)
   cmake_parse_arguments(arg "PRIVATE" "" "" ${ARGN})
@@ -46,7 +43,6 @@ function(cupcake_add_library name)
   target_link_libraries(${PROJECT_NAME}.libraries INTERFACE ${target})
 
   if(PROJECT_IS_TOP_LEVEL)
-    target_link_libraries(libraries INTERFACE ${target})
     add_library(libraries.${name} ALIAS ${target})
     add_library(l.${name} ALIAS ${target})
     if(name STREQUAL PROJECT_NAME)
