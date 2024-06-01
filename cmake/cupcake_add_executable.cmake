@@ -6,9 +6,6 @@ include(cupcake_module_dir)
 include(cupcake_project_properties)
 include(GNUInstallDirs)
 
-# A target representing all executables declared with the function below.
-add_custom_target(executables)
-
 # add_executable(<name> [PRIVATE] [<source>...])
 function(cupcake_add_executable name)
   cmake_parse_arguments(arg "PRIVATE" "" "" ${ARGN})
@@ -42,7 +39,6 @@ function(cupcake_add_executable name)
   )
 
   if(PROJECT_IS_TOP_LEVEL)
-    add_dependencies(executables ${target})
     add_executable(executables.${name} ALIAS ${target})
     add_executable(e.${name} ALIAS ${target})
     if(name STREQUAL PROJECT_NAME)

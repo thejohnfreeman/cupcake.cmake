@@ -2,8 +2,6 @@ include_guard(GLOBAL)
 
 include(cupcake_find_sources)
 
-add_custom_target(tests)
-
 function(cupcake_add_test name)
   set(target ${PROJECT_NAME}.tests.${name})
   set(this ${target} PARENT_SCOPE)
@@ -23,7 +21,6 @@ function(cupcake_add_test name)
   add_dependencies(${PROJECT_NAME}.tests ${target})
 
   if(PROJECT_IS_TOP_LEVEL)
-    add_dependencies(tests ${target})
     add_executable(tests.${name} ALIAS ${target})
     add_executable(t.${name} ALIAS ${target})
   else()

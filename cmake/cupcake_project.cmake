@@ -110,6 +110,14 @@ macro(cupcake_project)
   # There is no external group target for executables.
   add_custom_target(${PROJECT_NAME}.tests)
 
+  if(PROJECT_IS_TOP_LEVEL)
+    add_library(libraries ALIAS ${PROJECT_NAME}.libraries)
+    add_custom_target(executables)
+    add_dependencies(executables ${PROJECT_NAME.executables})
+    add_custom_target(tests)
+    add_dependencies(tests ${PROJECT_NAME.tests})
+  endif()
+
   # This command should be called when
   # `CMAKE_CURRENT_SOURCE_DIR == PROJECT_SOURCE_DIR`,
   # but when it isn't, we want to look in `PROJECT_SOURCE_DIR`.
