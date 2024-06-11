@@ -82,7 +82,7 @@ Special commands are documented with example `cupcake.json`
 and Pythonic pseudocode.
 
 
-<a id="toc" />
+<a id="toc"></a>
 
 ### General commands
 

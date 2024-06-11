@@ -113,9 +113,9 @@ macro(cupcake_project)
   if(PROJECT_IS_TOP_LEVEL)
     add_library(libraries ALIAS ${PROJECT_NAME}.libraries)
     add_custom_target(executables)
-    add_dependencies(executables ${PROJECT_NAME.executables})
+    add_dependencies(executables ${PROJECT_NAME}.executables)
     add_custom_target(tests)
-    add_dependencies(tests ${PROJECT_NAME.tests})
+    add_dependencies(tests ${PROJECT_NAME}.tests)
   endif()
 
   # This command should be called when
