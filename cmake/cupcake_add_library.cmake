@@ -67,13 +67,6 @@ function(cupcake_add_library name)
     "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/${name}.hpp"
   )
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}")
-    cupcake_isolate_headers(
-      ${target} PRIVATE
-      "${CMAKE_CURRENT_SOURCE_DIR}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}"
-    )
-  endif()
 
   target_include_directories(${target} ${public}
     "$<BUILD_INTERFACE:${CMAKE_HEADER_OUTPUT_DIRECTORY}>"
@@ -84,8 +77,10 @@ function(cupcake_add_library name)
   get_target_property(type ${target} TYPE)
   if(NOT type STREQUAL INTERFACE_LIBRARY)
     # Let the library include "private" headers if it wants.
-    target_include_directories(${target}
-      PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}"
+    cupcake_isolate_headers(
+      ${target} PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${name}"
     )
 
     cupcake_find_sources(sources lib${name} src)
