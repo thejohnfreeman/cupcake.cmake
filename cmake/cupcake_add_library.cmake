@@ -100,6 +100,7 @@ function(cupcake_add_library name)
     if(NOT type STREQUAL SHARED_LIBRARY)
       # Disable the export definitions.
       string(TOUPPER ${name} UPPER_NAME)
+      string(REPLACE - _ UPPER_NAME ${UPPER_NAME})
       target_compile_definitions(${target} PUBLIC ${UPPER_NAME}_STATIC_DEFINE)
     endif()
   endif()

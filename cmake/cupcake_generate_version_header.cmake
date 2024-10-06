@@ -8,6 +8,7 @@ function(cupcake_generate_version_header name)
     set(ARG_EXPORT_FILE_NAME "${CMAKE_HEADER_OUTPUT_DIRECTORY}/${name}/version.hpp")
   endif()
   string(TOUPPER ${name} UPPER_NAME)
+  string(REPLACE - _ UPPER_NAME ${UPPER_NAME})
   configure_file(
     "${CUPCAKE_MODULE_DIR}/data/version.hpp.in"
     "${ARG_EXPORT_FILE_NAME}"
