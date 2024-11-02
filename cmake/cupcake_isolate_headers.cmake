@@ -1,5 +1,7 @@
 include_guard(GLOBAL)
 
+include(cupcake_create_symbolic_link)
+
 # Consider include directory B nested under prefix A:
 #
 #     /path/to/A/then/to/B/...
@@ -44,7 +46,7 @@ function(cupcake_isolate_headers target scope A)
     set(Y "${X}/${C}")
     cmake_path(GET Y PARENT_PATH parent)
     file(MAKE_DIRECTORY "${parent}")
-    file(CREATE_LINK "${B}" "${Y}" SYMBOLIC)
+    cupcake_create_symbolic_link("${B}" "${Y}")
     target_include_directories(${target} ${scope} "$<BUILD_INTERFACE:${X}>")
   endforeach()
 endfunction()
