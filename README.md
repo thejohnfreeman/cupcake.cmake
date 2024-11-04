@@ -1,5 +1,9 @@
 # cupcake.cmake
 
+[![GitHub checks](https://img.shields.io/github/check-runs/thejohnfreeman/project-template-cpp/master?label=tests)](https://github.com/thejohnfreeman/project-template-cpp/actions?query=branch%3Amaster)
+[![GitHub releases](https://img.shields.io/github/v/release/thejohnfreeman/cupcake.cmake?filter=!*%23*)](https://github.com/thejohnfreeman/cupcake.cmake/releases)
+![CMake](https://img.shields.io/badge/CMake-%3E%3D%203.21-important)
+
 cupcake.cmake is a CMake module.
 It is named with the .cmake extension to distinguish it from [cupcake.py][],
 which is a Python tool for working with Conan and CMake projects,
@@ -8,6 +12,7 @@ with additional features for projects using cupcake.cmake.
 
 ## Install
 
+cupcake.cmake requires **CMake >= 3.21**.
 The recommended method to import cupcake.cmake is with
 [`find_package()`][find_package]:
 
@@ -757,7 +762,7 @@ Add rules to install package metadata for Conan.
 This command adds an installation rule to install a Python script at
 `${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_EXPORTDIR}/<PackageName>/cpp_info.py`.
 That script can be executed within the [`package_info()`][package_info] method
-of a Python conanfile to [fill in the details][2] of the
+of a Python Conan recipe (`conanfile.py`) to [fill in the details][2] of the
 [`cpp_info`][cpp_info] attribute:
 
 ```python
