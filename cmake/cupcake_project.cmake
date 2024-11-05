@@ -101,6 +101,7 @@ macro(cupcake_project)
 
   set(target ${PROJECT_NAME}.imports.main)
   add_library(${target} INTERFACE)
+  set_target_properties(${target} PROPERTIES EXPORT_NAME imports::main)
   install(TARGETS ${target} EXPORT ${PROJECT_EXPORT_SET})
   add_library(${PROJECT_NAME}::imports::main ALIAS ${target})
 

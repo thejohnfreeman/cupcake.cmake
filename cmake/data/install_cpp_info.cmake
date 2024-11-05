@@ -48,5 +48,6 @@ execute_process(
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
     "${CUPCAKE_MODULE_DIR}/data/project_cpp_info"
   WORKING_DIRECTORY "${tmp_dir}"
+  COMMAND_ERROR_IS_FATAL ANY
 )
 file(REMOVE_RECURSE "${tmp_dir}")
