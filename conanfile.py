@@ -10,6 +10,7 @@ class Cupcake(ConanFile):
     license = 'ISC'
     author = 'John Freeman <jfreeman08@gmail.com>'
     url = 'https://github.com/thejohnfreeman/cupcake.cmake'
+    description = 'CMake boilerplate for an opinionated project structure.'
 
     # TODO: The CMake helper requires the build_type setting to run its build
     # or install methods.

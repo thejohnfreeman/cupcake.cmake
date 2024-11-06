@@ -36,9 +36,6 @@ function(cupcake_add_library name)
   if(name STREQUAL PROJECT_NAME)
     add_library(${PROJECT_NAME}.library ALIAS ${target})
   endif()
-  set_target_properties(${target} PROPERTIES
-    EXPORT_NAME libraries::${name}
-  )
 
   target_link_libraries(${PROJECT_NAME}.libraries INTERFACE ${target})
 
@@ -112,6 +109,7 @@ function(cupcake_add_library name)
   endif()
 
   if(NOT arg_PRIVATE)
+    set_target_properties(${target} PROPERTIES EXPORT_NAME libraries::${name})
     set(alias ${PROJECT_NAME}::libraries::${name})
     add_library(${alias} ALIAS ${target})
     add_library(${PROJECT_NAME}::l::${name} ALIAS ${target})

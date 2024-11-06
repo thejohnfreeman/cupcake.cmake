@@ -10,6 +10,12 @@ find_package(
   PATHS ${CMAKE_INSTALL_PREFIX}
 )
 
+# Do not warn for unused variables.
+if(EXTERNAL_CONAN_COMPONENTS)
+endif()
+if(CMAKE_POLICY_DEFAULT_CMP0091)
+endif()
+
 string(APPEND cpp_info
   # - names[generator]: namespace name
   "self.names['cmake_find_package'] = '${PACKAGE_NAME}'\n"
@@ -23,7 +29,16 @@ string(APPEND cpp_info
   "self.set_property('cmake_find_mode', 'config')\n"
 )
 
-set(target_pattern "^([^:]+)::(.+)$")
+macro(log level text)
+  set(space " ")
+  if(level STREQUAL STATUS)
+    set(space "")
+  endif()
+  message(${level} "${space}${text}")
+  string(APPEND buffer.log "# [${level}] ${text}\n")
+endmacro()
+
+set(pattern_namespace "^([^:]+)::(.+)$")
 
 # For each library target, add Python statements to the script text
 # to declare these properties on a component named after the target:
@@ -36,9 +51,23 @@ set(target_pattern "^([^:]+)::(.+)$")
 # - sharedlinkflags: list of linker flags for shared libraries
 # - libs: singleton list of installed library name to be searched by linker
 # - libdirs: singleton list of directory, relative to the install prefix, where library is installed
-foreach(target ${${PACKAGE_NAME}_LIBRARIES})
+
+# `targets` is the set of CMake library targets that
+# have been or will be added as Conan components.
+set(targets ${${PACKAGE_NAME}_LIBRARIES})
+# `queue` is the subset of `targets` that
+# have not yet been added as Conan components.
+set(queue ${targets})
+# On each iteration, we will remove one target from `queue`,
+# and add zero or more targets to `queue` and `targets`
+# if they do not already appear in `targets`.
+while(queue)
+  list(POP_FRONT queue target)
+
+  # log(STATUS "target = ${target}")
+
   # Peel off the namespace to get the unqualified CMake target name.
-  string(REGEX MATCH "${target_pattern}" match ${target})
+  string(REGEX MATCH "${pattern_namespace}" match ${target})
   if(NOT CMAKE_MATCH_1 STREQUAL PACKAGE_NAME)
     message(FATAL_ERROR "foreign target: '${target}'")
   endif()
@@ -46,21 +75,26 @@ foreach(target ${${PACKAGE_NAME}_LIBRARIES})
   # Target name unqualified by package name.
   set(tname ${CMAKE_MATCH_2})
 
-  string(REGEX MATCH "${target_pattern}" match ${tname})
-  if(NOT CMAKE_MATCH_1 STREQUAL "libraries")
+  # Type must be "libraries" or "imports".
+  string(REGEX MATCH "${pattern_namespace}" match ${tname})
+  set(type ${CMAKE_MATCH_1})
+  if(NOT (type STREQUAL "libraries" OR type STREQUAL "imports"))
     message(FATAL_ERROR "not a library: '${target}'")
   endif()
 
   # Library name.
   set(name ${CMAKE_MATCH_2})
-  # Component name cannot contain double colon (::).
-  set(cname libraries.${name})
-  set(components "${components}'${cname}',")
+  # Component name. Cannot contain double colon (::).
+  set(cname ${type}.${name})
+  if(type STREQUAL "libraries")
+    string(APPEND library_components "'${cname}',")
+  endif()
 
-  # "${cname}" == "libraries.${name}"
-  set(aliases "'${PACKAGE_NAME}::l::${name}'")
-  if(name STREQUAL PACKAGE_NAME)
-    set(aliases "${aliases},'${PACKAGE_NAME}::library'")
+  # Generate external aliases.
+  string(SUBSTRING ${type} 0 1 shorthand)
+  set(aliases "'${PACKAGE_NAME}::${shorthand}::${name}'")
+  if(type STREQUAL "libraries" AND name STREQUAL PACKAGE_NAME)
+    string(APPEND aliases ",'${PACKAGE_NAME}::library'")
   endif()
 
   string(APPEND cpp_info
@@ -73,28 +107,60 @@ foreach(target ${${PACKAGE_NAME}_LIBRARIES})
   )
 
   get_target_property(links ${target} INTERFACE_LINK_LIBRARIES)
-  if(links)
-    unset(requires)
-    foreach(link ${links})
-      if(NOT TARGET ${link})
-        message(STATUS "ignoring non-target link '${link}' of target '${target}'")
-        continue()
+  unset(requires)
+  while(links)
+    list(POP_FRONT links link)
+    # Each link is one of:
+    # - An internal target.
+    # - An external target.
+    # - A non-target, most likely a library name or absolute path.
+    if(NOT TARGET ${link})
+      log(ERROR "ignoring non-target link '${link}' of target '${target}'")
+      continue()
+    endif()
+    # Unalias once we've confirmed that it is a target.
+    get_target_property(linked ${link} ALIASED_TARGET)
+    if(linked)
+      set(link ${linked})
+    endif()
+    # log(STATUS "link = ${link}")
+    # An internal target starts with "${PACKAGE_NAME}::".
+    # Everything else is an external target.
+    # We cannot distinguish internal vs external libraries by whether they are
+    # imported. It does not work when "importing" external libraries with
+    # `add_subdirectory`. The subdirectory's targets would not be imported,
+    # but would not be internal either, unless we install them.
+    string(REGEX MATCH "${pattern_namespace}" match ${link})
+    if(CMAKE_MATCH_1 STREQUAL PACKAGE_NAME)
+      # Internal target.
+      # Add it to `queue` (and `targets`) if not yet in `targets`.
+      list(FIND targets "${link}" index)
+      if(index LESS 0)
+        list(APPEND targets "${link}")
+        list(APPEND queue "${link}")
       endif()
-      # TODO: We could try to distinguish internal vs external libraries by
-      # whether they are imported, but that would not work when taking
-      # dependencies by add_subdirectory unless we install their libraries as
-      # internal libraries.
-      string(REGEX MATCH "${target_pattern}" match ${link})
-      if(CMAKE_MATCH_1 STREQUAL PACKAGE_NAME)
-        set(lname ${CMAKE_MATCH_2})
-      else()
-        get_target_property(lname ${link} ALIASED_TARGET)
-        if(NOT lname)
-          set(lname ${link})
-        endif()
+      # Translate to Conan component name.
+      if(NOT CMAKE_MATCH_2 MATCHES "${pattern_namespace}")
+        message(FATAL_ERROR "illegal internal target name: ${link}")
       endif()
-      string(APPEND requires "'${lname}',")
-    endforeach()
+      set(lname ${CMAKE_MATCH_1}.${CMAKE_MATCH_2})
+    else()
+      # External target.
+      # Translate to Conan component name.
+      string(
+        JSON lname ERROR_VARIABLE error
+        GET "{${EXTERNAL_CONAN_COMPONENTS}}" "${link}"
+      )
+      if(error)
+        log(ERROR "unrecognized target linked by ${target}: ${link}")
+        set(lname ${link})
+      endif()
+    endif()
+    list(APPEND requires "'${lname}'")
+  endwhile()
+  if(requires)
+    list(REMOVE_DUPLICATES requires)
+    list(JOIN requires "," requires)
     string(APPEND cpp_info
       "self.components['${cname}'].requires = [${requires}]\n"
     )
@@ -134,10 +200,12 @@ foreach(target ${${PACKAGE_NAME}_LIBRARIES})
     )
   endif()
 
+  get_target_property(options ${target} INTERFACE_LINK_OPTIONS)
   # LINK_FLAGS until CMake 3.13, then LINK_OPTIONS.
-  get_target_property(options ${target} LINK_OPTIONS)
-  if(NOT options)
-    get_target_property(options ${target} LINK_FLAGS)
+  get_target_property(flags ${target} LINK_FLAGS)
+  if(flags)
+    log(WARNING "LINK_FLAGS are deprecated. Found on ${target}")
+    list(APPEND options "${flags}")
   endif()
   if(options)
     foreach(option ${options})
@@ -163,11 +231,14 @@ foreach(target ${${PACKAGE_NAME}_LIBRARIES})
       )
     endif()
   endif()
-endforeach()
+endwhile()
 
+# TODO: Let other libraries be the default export.
 string(APPEND cpp_info
-  "self.components['libraries'].set_property('cmake_target_name', 'zero::libraries')\n"
-  "self.components['libraries'].requires = [${components}]\n"
+  "self.components['libraries'].set_property('cmake_target_name', '${PACKAGE_NAME}::libraries')\n"
+  "self.components['libraries'].set_property('default_export', True)\n"
+  "self.components['libraries'].requires = [${library_components}]\n"
+  "${buffer.log}"
 )
 
 # There is no way to model executables in `cpp_info`.
