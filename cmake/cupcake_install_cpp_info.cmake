@@ -19,11 +19,11 @@ file(READ "${CUPCAKE_MODULE_DIR}/data/install_cpp_info.cmake"
 # package with `find_package` and then generates and installs a `cpp_info.py`
 # under `CMAKE_INSTALL_PREFIX`.
 function(cupcake_install_cpp_info)
-  cupcake_get_project_property(CONAN_COMPONENTS)
-  string(REPLACE "\"" "\\\"" CONAN_COMPONENTS "${CONAN_COMPONENTS}")
+  cupcake_get_project_property(EXTERNAL_CONAN_COMPONENTS)
+  string(REPLACE "\"" "\\\"" EXTERNAL_CONAN_COMPONENTS "${EXTERNAL_CONAN_COMPONENTS}")
   install(
     CODE "
-set(CONAN_COMPONENTS \"${CONAN_COMPONENTS}\")
+set(EXTERNAL_CONAN_COMPONENTS \"${EXTERNAL_CONAN_COMPONENTS}\")
 set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")
 set(PACKAGE_NAME ${PROJECT_NAME})
 string(TOUPPER $<CONFIG> CONFIG)

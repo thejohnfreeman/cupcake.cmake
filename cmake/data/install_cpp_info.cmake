@@ -8,7 +8,7 @@
 # is `CMAKE_INSTALL_PREFIX`, because it can change at install time.
 
 set(parameters
-  CONAN_COMPONENTS
+  # EXTERNAL_CONAN_COMPONENTS can be an empty string.
   CMAKE_BINARY_DIR
   PACKAGE_NAME
   CONFIG
@@ -26,7 +26,7 @@ if(missing_parameters)
   message(FATAL_ERROR "missing parameters: ${missing_parameters}")
 endif()
 
-message(STATUS "CONAN_COMPONENTS = '${CONAN_COMPONENTS}'")
+message(STATUS "EXTERNAL_CONAN_COMPONENTS = '${EXTERNAL_CONAN_COMPONENTS}'")
 message(STATUS "CMAKE_BINARY_DIR = '${CMAKE_BINARY_DIR}'")
 message(STATUS "PACKAGE_NAME = '${PACKAGE_NAME}'")
 message(STATUS "CONFIG = '${CONFIG}'")
@@ -39,7 +39,7 @@ set(tmp_dir "${CMAKE_BINARY_DIR}/cpp_info")
 file(MAKE_DIRECTORY "${tmp_dir}")
 execute_process(
   COMMAND "${CMAKE_COMMAND}"
-    "-DCONAN_COMPONENTS=${CONAN_COMPONENTS}"
+    "-DEXTERNAL_CONAN_COMPONENTS=${EXTERNAL_CONAN_COMPONENTS}"
     "-DPACKAGE_NAME=${PACKAGE_NAME}"
     "-DCONFIG=${CONFIG}"
     # CMake complains if `CMAKE_BUILD_TYPE` is not set for

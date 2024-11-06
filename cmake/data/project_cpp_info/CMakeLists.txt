@@ -10,6 +10,12 @@ find_package(
   PATHS ${CMAKE_INSTALL_PREFIX}
 )
 
+# Do not warn for unused variables.
+if(EXTERNAL_CONAN_COMPONENTS)
+endif()
+if(CMAKE_POLICY_DEFAULT_CMP0091)
+endif()
+
 string(APPEND cpp_info
   # - names[generator]: namespace name
   "self.names['cmake_find_package'] = '${PACKAGE_NAME}'\n"
@@ -141,9 +147,12 @@ while(queue)
     else()
       # External target.
       # Translate to Conan component name.
-      string(JSON lname ERROR_VARIABLE error GET "{${CONAN_COMPONENTS}}" "${link}")
+      string(
+        JSON lname ERROR_VARIABLE error
+        GET "{${EXTERNAL_CONAN_COMPONENTS}}" "${link}"
+      )
       if(error)
-        log(ERROR "${error}")
+        log(ERROR "unrecognized target linked by ${target}: ${link}")
         set(lname ${link})
       endif()
     endif()

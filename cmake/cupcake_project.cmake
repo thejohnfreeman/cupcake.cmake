@@ -27,7 +27,7 @@ function(_cupcake_parse_json json)
     endforeach()
 
   endforeach()
-  cupcake_set_project_property(PROPERTY CONAN_COMPONENTS "${members}")
+  cupcake_set_project_property(PROPERTY EXTERNAL_CONAN_COMPONENTS "${members}")
 endfunction()
 
 function(cupcake_parse_component variable component)
