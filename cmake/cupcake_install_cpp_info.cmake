@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
 include(cupcake_module_dir)
+include(cupcake_project_properties)
 
 file(READ "${CUPCAKE_MODULE_DIR}/data/install_cpp_info.cmake"
   CUPCAKE_INSTALL_CPP_INFO
@@ -18,8 +19,11 @@ file(READ "${CUPCAKE_MODULE_DIR}/data/install_cpp_info.cmake"
 # package with `find_package` and then generates and installs a `cpp_info.py`
 # under `CMAKE_INSTALL_PREFIX`.
 function(cupcake_install_cpp_info)
+  cupcake_get_project_property(CONAN_COMPONENTS)
+  string(REPLACE "\"" "\\\"" CONAN_COMPONENTS "${CONAN_COMPONENTS}")
   install(
     CODE "
+set(CONAN_COMPONENTS \"${CONAN_COMPONENTS}\")
 set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")
 set(PACKAGE_NAME ${PROJECT_NAME})
 string(TOUPPER $<CONFIG> CONFIG)

@@ -1,5 +1,49 @@
 include_guard(GLOBAL)
 
+include(cupcake_json)
+include(cupcake_project_properties)
+
+# This is a function just to create a private scope for variables.
+function(_cupcake_parse_json json)
+  set(members "\"\":null")
+  # imports = json.get('imports', [])
+  cupcake_json_get_list(imports "${json}" imports)
+  foreach(import IN LISTS imports)
+    # import :: { root :: object, components :: object[] }
+
+    # if component := import['root']:
+    string(JSON component ERROR_VARIABLE error GET "${import}" root)
+    if(NOT error)
+      cupcake_parse_component(ms "${component}")
+      string(APPEND members "${ms}")
+    endif()
+
+    # components = import.get('components', [])
+    cupcake_json_get_list(components "${import}" components)
+    foreach(component IN LISTS components)
+      # component :: { name :: string, target :: string, aliases: string[] }
+      cupcake_parse_component(ms "${component}")
+      string(APPEND members "${ms}")
+    endforeach()
+
+  endforeach()
+  cupcake_set_project_property(PROPERTY CONAN_COMPONENTS "${members}")
+endfunction()
+
+function(cupcake_parse_component variable component)
+  string(JSON name GET "${component}" name)
+  string(JSON target GET "${component}" target)
+  # members[target] = name
+  set(members ",\"${target}\":\"${name}\"")
+  # aliases = component.get('aliases', []):
+  cupcake_json_get_list(aliases "${component}" aliases)
+  foreach(alias IN LISTS aliases)
+    # members[alias] = name
+    string(APPEND members ",\"${alias}\":\"${name}\"")
+  endforeach()
+  set(${variable} "${members}" PARENT_SCOPE)
+endfunction()
+
 macro(cupcake_project)
   # Allow `install(CODE)` to use generator expressions.
   cmake_policy(SET CMP0087 NEW)
@@ -126,6 +170,7 @@ macro(cupcake_project)
   if(EXISTS "${path}")
     file(READ "${path}" PROJECT_JSON)
     set(${PROJECT_NAME}_JSON "${PROJECT_JSON}")
+    _cupcake_parse_json("${PROJECT_JSON}")
   endif()
 
   set(${PROJECT_NAME}_FOUND 1)
