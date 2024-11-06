@@ -29,7 +29,8 @@ function(cupcake_add_executables)
       #   | { target :: string, scope? :: PUBLIC | PRIVATE | INTERFACE }
       string(JSON type TYPE "${link}")
       if(type STREQUAL STRING)
-        set(target "${link}")
+        # A JSON string is already quoted.
+        set(target ${link})
         set(scope "PRIVATE")
       else()
         string(JSON target GET "${link}" target)

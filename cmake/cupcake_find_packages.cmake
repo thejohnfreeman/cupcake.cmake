@@ -14,7 +14,8 @@ function(cupcake_find_packages group)
     # Select only imports whose `groups` (default: `["main"]`) contain `group`.
     cupcake_json_get(groups ARRAY "[\"main\"]" "${import}" groups)
     cupcake_json_to_list(groups "${groups}")
-    list(FIND groups "${group}" i)
+    # Group names are quoted JSON strings in the list.
+    list(FIND groups "\"${group}\"" i)
     if(i LESS 0)
       continue()
     endif()

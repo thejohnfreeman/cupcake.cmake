@@ -29,7 +29,8 @@ function(cupcake_add_libraries)
       #   | { target :: string, scope? :: PUBLIC | PRIVATE | INTERFACE }
       string(JSON type TYPE "${link}")
       if(type STREQUAL STRING)
-        set(target "${link}")
+        # A JSON string is already quoted.
+        set(target ${link})
         set(scope "PUBLIC")
       else()
         string(JSON target GET "${link}" target)
