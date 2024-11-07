@@ -152,8 +152,12 @@ while(queue)
         GET "{${EXTERNAL_CONAN_COMPONENTS}}" "${link}"
       )
       if(error)
-        log(ERROR "unrecognized target linked by ${target}: ${link}")
-        set(lname ${link})
+        # It could be a special library (e.g. -lm),
+        # or an indirect dependency,
+        # but we only want to include
+        # direct dependencies that are Conan components.
+        log(INFO "unrecognized target linked by ${target}: ${link}")
+        continue()
       endif()
     endif()
     list(APPEND requires "'${lname}'")

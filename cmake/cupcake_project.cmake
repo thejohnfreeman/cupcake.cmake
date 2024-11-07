@@ -37,6 +37,7 @@ function(cupcake_parse_component variable component)
   set(members ",\"${target}\":\"${name}\"")
   # aliases = component.get('aliases', []):
   cupcake_json_get_list(aliases "${component}" aliases)
+  cupcake_unquote(aliases "${aliases}")
   foreach(alias IN LISTS aliases)
     # members[alias] = name
     string(APPEND members ",\"${alias}\":\"${name}\"")
